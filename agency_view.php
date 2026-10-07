@@ -75,6 +75,12 @@ if ($toEmail !== null && EmailHealth::isBlocked($pdo, $toEmail)) {
         $toSource = $toEmail ? 'lead_list' : null;
     }
 }
+// Where the address appears decides its label; one typed into To and saved is in neither list.
+if ($toEmail !== null) {
+    $lc = strtolower($toEmail);
+    $toSource = in_array($lc, array_map('strtolower', $emails), true) ? 'site'
+        : (in_array($lc, array_map('strtolower', array_column($known, 'email')), true) ? 'lead_list' : 'manual');
+}
 // Deliverability of the address we'd send to (cached; null = not checked yet → checked by the page script).
 $toStatus = $toEmail ? EmailHealth::status($pdo, $toEmail) : null;
 $toSourceInfo = null;
@@ -129,6 +135,7 @@ $flash = [
     'emailed' => 'Email sent from ' . MailSender::fromAddress() . '. Marked as sent and as Reached out on the dashboard; follow-up is due in ' . AgencyStore::FOLLOW_UP_DAYS . ' days.',
     'bounced' => 'Marked as bounced. That address is blocked for good, and the agency counts as not contacted (Not reached out on the dashboard).',
     'notes' => 'Notes saved.',
+    'bad_to' => 'Not saved: the To address isn\'t a valid email address.',
 ][$_GET['done'] ?? ''] ?? null;
 
 // Emails sent from the app and what came back (MailboxSync). Loaded before marking
@@ -142,7 +149,7 @@ $topbarActions = '<a class="btn btn-secondary" href="agency_outreach.php">&larr;
 require __DIR__ . '/includes/layout_header.php';
 ?>
 
-<?php if ($flash): ?><div class="notice notice-ok"><?= h($flash) ?></div><?php endif; ?>
+<?php if ($flash): ?><div class="<?= ($_GET['done'] ?? '') === 'bad_to' ? 'error' : 'notice notice-ok' ?>"><?= h($flash) ?></div><?php endif; ?>
 
 <div class="card agency-header">
   <div class="agency-header-main">
@@ -259,6 +266,8 @@ require __DIR__ . '/includes/layout_header.php';
             <div class="email-source">
               <?php if ($toSource === 'lead_list'): ?>
                 <span class="badge badge-lowpri">From your lead list</span> not published on the site<?= $toSourceInfo ? ' · source: ' . h($toSourceInfo) : '' ?>
+              <?php elseif ($toSource === 'manual'): ?>
+                <span class="badge badge-neutral">Entered by you</span>
               <?php else: ?>
                 <span class="badge badge-send">On the site</span>
               <?php endif; ?>
@@ -353,7 +362,7 @@ require __DIR__ . '/includes/layout_header.php';
     <input type="hidden" name="id" value="<?= (int) $id ?>">
     <input type="hidden" name="analysis_id" value="<?= (int) $an['id'] ?>">
     <label for="emailTo">To</label>
-    <input type="text" id="emailTo" value="<?= h($toEmail ?? '') ?>" placeholder="No email found on the site or in your lead list — add one yourself" autocomplete="off">
+    <input type="text" id="emailTo" name="to" value="<?= h($toEmail ?? '') ?>" placeholder="No email found on the site or in your lead list — add one yourself" autocomplete="off">
     <label for="emailSubject">Subject</label>
     <input type="text" id="emailSubject" name="subject" value="<?= h($subject) ?>">
     <label for="emailBody">Body <span class="muted label-note">The portfolio line is always included, and the email ends with just your name</span></label>
@@ -540,13 +549,13 @@ require __DIR__ . '/includes/layout_header.php';
     document.getElementById('emailPreview').textContent = 'To: ' + (addr || '(none)') + '\nSubject: ' + s + '\n\n' + b;
   }
 
-  const initial = subject.value + '\u0000' + body.value;
+  const draft = function() { return to.value.trim() + '\u0000' + subject.value + '\u0000' + body.value; };
+  const initial = draft();
   function markDirty() {
-    document.getElementById('unsavedHint').hidden = (subject.value + '\u0000' + body.value) === initial;
+    document.getElementById('unsavedHint').hidden = draft() === initial;
     refresh();
   }
-  [subject, body].forEach(function(el) { el.addEventListener('input', markDirty); });
-  to.addEventListener('input', refresh);
+  [to, subject, body].forEach(function(el) { el.addEventListener('input', markDirty); });
   // The app can't see what happens in Gmail, so opening the email IS the send as far as
   // the app is concerned: it's marked sent (and Reached out on the dashboard) right away.
   // A false "sent" is one click to undo; a missed one could mean emailing an agency twice.

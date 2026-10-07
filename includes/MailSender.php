@@ -4,6 +4,7 @@ require_once __DIR__ . '/lib/PHPMailer/Exception.php';
 require_once __DIR__ . '/lib/PHPMailer/SMTP.php';
 require_once __DIR__ . '/lib/PHPMailer/PHPMailer.php';
 require_once __DIR__ . '/EmailDraft.php';
+require_once __DIR__ . '/Settings.php';
 
 use PHPMailer\PHPMailer\PHPMailer;
 
@@ -21,8 +22,13 @@ class MailSender {
     private const DAILY_CAP = 20;
     private const MIN_GAP_SECONDS = 120;
 
-    public static function dailyCap(): int {
-        return (int) (app_config()['smtp_daily_cap'] ?? self::DAILY_CAP);
+    /**
+     * Once automatic sending has been switched on, its weekly-growing limit
+     * (AutoSender) applies to every outreach email, manual ones included.
+     */
+    public static function dailyCap(?PDO $pdo = null): int {
+        $auto = $pdo !== null ? Settings::get($pdo, 'auto_send_limit') : '';
+        return $auto !== '' ? (int) $auto : (int) (app_config()['smtp_daily_cap'] ?? self::DAILY_CAP);
     }
 
     public static function minGap(): int {
@@ -42,7 +48,7 @@ class MailSender {
         $sinceLast = $row['since_last'] !== null ? (int) $row['since_last'] : null;
         return [
             'today' => (int) $row['today'],
-            'cap' => self::dailyCap(),
+            'cap' => self::dailyCap($pdo),
             'wait' => $sinceLast === null ? 0 : max(0, self::minGap() - $sinceLast),
         ];
     }

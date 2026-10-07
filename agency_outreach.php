@@ -5,6 +5,7 @@ require_once __DIR__ . '/includes/AgencyStore.php';
 require_once __DIR__ . '/includes/AgencyViews.php';
 require_once __DIR__ . '/includes/FilterBar.php';
 require_once __DIR__ . '/includes/Settings.php';
+require_once __DIR__ . '/includes/AutoSender.php';
 
 $pdo = get_db();
 
@@ -156,6 +157,12 @@ require __DIR__ . '/includes/layout_header.php';
   Background analysis: last run <?= date('M j, H:i', (int) $cronLast['at']) ?> —
   <?= (int) $cronLast['analyzed'] ?> analyzed, <?= (int) $cronLast['failed'] ?> failed (<?= htmlspecialchars((string) $cronLast['stopped']) ?>).
   <?php if ($quotaResetAt > time()): ?>Paused until <?= date('M j, H:i', $quotaResetAt) ?>, when the free AI quota resets.<?php endif; ?>
+</p>
+<?php endif; ?>
+<?php if (AutoSender::enabled($pdo) && has_smtp_config()): $sendUsage = MailSender::usage($pdo); $sendPaused = AutoSender::pausedReason($pdo); ?>
+<p class="hint">
+  Automatic sending: <?php if ($sendPaused !== ''): ?><strong class="follow-up-due">paused</strong> — <?= htmlspecialchars($sendPaused) ?><?php else: ?>on<?php endif; ?>,
+  <?= (int) $sendUsage['today'] ?> of <?= (int) $sendUsage['cap'] ?> sent today. <a href="agency_settings.php#auto-send">Details</a>
 </p>
 <?php endif; ?>
 

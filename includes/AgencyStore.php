@@ -30,7 +30,11 @@ class AgencyStore {
         AND p.contact_email IS NOT NULL AND p.contact_email <> '' ORDER BY p.id LIMIT 1)";
     private const LIST_FALLBACK_SQL = "an.to_email IS NULL AND an.decision <> 'SKIP' AND an.emails_json = '[]'";
     private const CHOSEN_EMAIL_SQL = 'COALESCE(an.to_email, IF(' . self::LIST_FALLBACK_SQL . ', LOWER(' . self::LEAD_LIST_EMAIL_SQL . '), NULL))';
-    public const TO_EMAIL_SQL = 'IF(' . self::CHOSEN_EMAIL_SQL . " IN (SELECT value FROM suppression_list WHERE type = 'email'), NULL, " . self::CHOSEN_EMAIL_SQL . ')';
+    // Template addresses (john.doe@…, test@…, …@example.com), never a real contact — counted as no address.
+    private const PLACEHOLDER_EMAIL_REGEXP = '^((john|jane)[._-]?doe|test|example|user|yourname|your[._-]?email|noreply|no-reply|donotreply)@'
+        . '|@(example\\\\.(com|org|net)|domain\\\\.com|yourdomain\\\\.com|yoursite\\\\.com|emaildomain\\\\.com|email\\\\.com|test\\\\.com)$';
+    public const TO_EMAIL_SQL = 'IF(' . self::CHOSEN_EMAIL_SQL . " IN (SELECT value FROM suppression_list WHERE type = 'email')"
+        . ' OR ' . self::CHOSEN_EMAIL_SQL . " REGEXP '" . self::PLACEHOLDER_EMAIL_REGEXP . "', NULL, " . self::CHOSEN_EMAIL_SQL . ')';
     /** An agency ready to email (a + LATEST_JOIN an): analyzed, not contacted yet, verdict SEND, with an address. */
     public const READY_SQL = "a.status = 'analyzed' AND an.decision = 'SEND' AND " . self::TO_EMAIL_SQL . ' IS NOT NULL';
 
@@ -422,6 +426,28 @@ class AgencyStore {
         self::markProspectsReachedOut($pdo, $id);
     }
 
+    /**
+     * Sends one outreach email from the mailbox and records it everywhere — the Send
+     * email button and cron_send.php both go through here. The caller has already
+     * run its safety checks (limits, blocked address, earlier contact).
+     *
+     * @return array MailSender::send()'s result
+     */
+    public static function sendOutreach(PDO $pdo, array $agency, int $analysisId, string $to, string $subject, string $body): array {
+        require_once __DIR__ . '/MailSender.php';
+        // Portfolio line, name-only sign-off and the DMMBS / opt-out footer, even if edited away.
+        $refStmt = $pdo->prepare('SELECT ref_slug FROM agency_analyses WHERE id = :id');
+        $refStmt->execute(['id' => $analysisId]);
+        $body = EmailDraft::finalize($body, EmailDraft::refSlug($refStmt->fetchColumn() ?: null, $agency['agency_name'], $agency['domain']));
+        $sent = MailSender::send($pdo, $to, $subject, $body, (int) $agency['id'], $analysisId);
+        if ($sent['ok']) {
+            // Keep the stored draft identical to what went out, then record the send everywhere.
+            self::saveEmailEdits($pdo, $analysisId, $subject, $body);
+            self::markSent($pdo, (int) $agency['id']);
+        }
+        return $sent;
+    }
+
     /** $at: when they replied (a Unix time, e.g. from the reply in the mailbox); default now. */
     public static function markReplied(PDO $pdo, int $id, ?int $at = null): void {
         $pdo->prepare("UPDATE agencies SET status = 'replied', replied_at = IF(:at IS NULL, NOW(), FROM_UNIXTIME(:at2)) WHERE id = :id")
@@ -509,6 +535,18 @@ class AgencyStore {
      * Stores the user's edits next to the AI's original. Text identical to
      * the original is stored as "no edit" (NULL).
      */
+    /**
+     * The To address from the agency page's Save edits, when it differs from the stored one —
+     * so the list, Ready to send and automatic sending all use it. Its source is cleared
+     * (the page works out site / lead list / entered by you from where the address appears).
+     */
+    public static function saveRecipient(PDO $pdo, int $analysisId, string $to): void {
+        $pdo->prepare(
+            'UPDATE agency_analyses SET to_email = :to, to_email_source = NULL
+             WHERE id = :id AND (to_email IS NULL OR LOWER(to_email) <> :to2)'
+        )->execute(['to' => strtolower($to), 'to2' => strtolower($to), 'id' => $analysisId]);
+    }
+
     public static function saveEmailEdits(PDO $pdo, int $analysisId, string $subject, string $body): void {
         $stmt = $pdo->prepare('SELECT subject, body FROM agency_analyses WHERE id = :id');
         $stmt->execute(['id' => $analysisId]);

@@ -33,7 +33,15 @@ if ($analysisId) {
 switch ($action) {
     case 'save_email':
         if ($analysisId) {
+            $to = strtolower(trim((string) ($_POST['to'] ?? '')));
+            if ($to !== '' && !filter_var($to, FILTER_VALIDATE_EMAIL)) {
+                $back += ['analysis' => $analysisId, 'done' => 'bad_to'];
+                break;
+            }
             AgencyStore::saveEmailEdits($pdo, $analysisId, (string) ($_POST['subject'] ?? ''), (string) ($_POST['body'] ?? ''));
+            if ($to !== '') {
+                AgencyStore::saveRecipient($pdo, $analysisId, $to); // automatic sending uses it too
+            }
             $back += ['analysis' => $analysisId, 'done' => 'saved'];
         }
         break;
@@ -117,17 +125,10 @@ switch ($action) {
             }
         }
 
-        // Portfolio line, name-only sign-off and the DMMBS / opt-out footer, even if edited away.
-        $refStmt = $pdo->prepare('SELECT ref_slug FROM agency_analyses WHERE id = :id');
-        $refStmt->execute(['id' => $analysisId]);
-        $body = EmailDraft::finalize($body, EmailDraft::refSlug($refStmt->fetchColumn() ?: null, $agency['agency_name'], $agency['domain']));
-        $sent = MailSender::send($pdo, $to, $subject, $body, $id, $analysisId);
+        $sent = AgencyStore::sendOutreach($pdo, $agency, $analysisId, $to, $subject, $body);
         if (!$sent['ok']) {
             $fail('send_failed', 'The email was NOT sent: ' . $sent['error']);
         }
-        // Keep the stored draft identical to what went out, then record the send everywhere.
-        AgencyStore::saveEmailEdits($pdo, $analysisId, $subject, $body);
-        AgencyStore::markSent($pdo, $id);
         echo json_encode(['ok' => true, 'saved_to_sent' => $sent['saved_to_sent'], 'message' => "Sent to $to."]);
         exit;
     case 'verify_email':

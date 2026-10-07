@@ -34,6 +34,41 @@ function sample_scrape(): array {
     ];
 }
 
+/** An email that follows STEP 3: 2 bullets, one about AI, 110-160 words, no forbidden words. */
+function good_body(): string {
+    return "Hi Maria,
+
+"
+        . "Brightline builds WordPress sites for small Austin businesses, so custom booking and membership features probably land on your desk every month. "
+        . "I'm Slobodan, a senior PHP and WordPress developer with 25 years of experience who takes that kind of build work off agency teams, white-label.
+
+"
+        . "Two areas I can take on for Brightline:
+
+"
+        . "* **Custom WordPress builds** — bespoke themes and plugins for client features your page builder can't handle
+"
+        . "* **AI features for your clients** — assistants that answer from a client's own content, plus smarter site search
+
+"
+        . "For example, I built the Strivefit and Yogasmith sites with class schedules and booking. I've delivered 100+ projects and work behind the scenes under your brand.
+
+"
+        . "I'm also happy to start with one **small paid task** so you can judge my code quality and communication before committing to anything bigger.
+
+"
+        . "You can see my portfolio here:
+https://dmmbs.com/?ref=brightline-digital
+
+"
+        . "Are any of your clients asking for AI features yet?
+
+"
+        . "Best regards,
+Slobodan Stevkovski
+https://dmmbs.com · {EMAIL} · {PHONE} · {LINKEDIN}";
+}
+
 function ai_reply(array $overrides = []): string {
     return json_encode(array_merge([
         'agency_name' => 'Brightline Digital',
@@ -47,7 +82,7 @@ function ai_reply(array $overrides = []): string {
         'other_channel' => null,
         'ref_slug' => 'brightline-digital',
         'subject' => 'WordPress development help for Brightline',
-        'body' => "Hi Maria,\n\n...\n\nBest regards,\nSlobodan Stevkovski\nhttps://dmmbs.com · {EMAIL} · {PHONE} · {LINKEDIN}",
+        'body' => good_body(),
         'follow_up_tip' => 'Message Maria on LinkedIn',
     ], $overrides));
 }
@@ -80,7 +115,8 @@ return [
         $system = AgencyQualifier::readPromptFile('system.txt');
         assert_contains('You help Slobodan Stevkovski', $system);
         assert_contains("You can see my portfolio here:\nhttps://dmmbs.com/?ref=<agency-slug>", $system);
-        assert_contains('I can support your team as a flexible white-label engineering resource, particularly with:', $system);
+        assert_contains("I'm also happy to start with one **small paid task**", $system);
+        assert_contains('AI bullet (required in every email)', $system);
         assert_contains('Swap test', $system);
         assert_not_contains('(optional third bullet)', $system, 'no annotation outside <angle brackets> that the AI could copy');
         $full = AgencyQualifier::systemPrompt();
@@ -158,6 +194,43 @@ return [
         $data = AgencyQualifier::applySafetyCheck(['to_email' => 'Hello@BrightlineDigital.com', 'red_flags' => []], sample_scrape()['emails']);
         assert_same('hello@brightlinedigital.com', $data['to_email']);
         assert_same([], $data['red_flags']);
+    },
+    'quality check: a good email passes; each broken rule is named' => function () {
+        assert_same([], AgencyQualifier::qualityIssues(good_body()));
+        $noAi = str_replace(["* **AI features for your clients** — assistants that answer from a client's own content, plus smarter site search\n", 'AI features yet'], ['', 'more help'], good_body());
+        assert_contains('no AI bullet', implode(' ', AgencyQualifier::qualityIssues($noAi)));
+        $hype = str_replace('Two areas', "I'd love to reach out about two areas", good_body());
+        assert_contains('"I\'d love to", "reach out"', implode(' ', AgencyQualifier::qualityIssues($hype)));
+        assert_contains('exclamation', implode(' ', AgencyQualifier::qualityIssues(str_replace('yet?', 'yet!', good_body()))));
+        $copied = str_replace('bespoke themes and plugins for client features your page builder can\'t handle', 'custom business applications, APIs, integrations and real-time functionality', good_body());
+        assert_contains('copied from the instructions', implode(' ', AgencyQualifier::qualityIssues($copied)));
+        assert_contains('words', implode(' ', AgencyQualifier::qualityIssues("Hi Maria,\n\n* **A** — b\n* **AI** — c\n\nBest regards,\nSlobodan Stevkovski")));
+        assert_true(AgencyQualifier::qualityIssues('freelance work') !== [] && !preg_match('/"free"/', implode(' ', AgencyQualifier::qualityIssues('freelance AI work'))), '"freelance" is not "free"');
+    },
+    'a weak email gets one rewrite with the problems listed, and the better version is kept' => function () {
+        $weak = str_replace('Two areas', "I'd love to help with two areas", good_body());
+        $ai = new FakeAiClient([ai_reply(['body' => $weak]), ai_reply()]);
+        $r = qualifier($ai)->analyze('https://brightlinedigital.com', sample_scrape());
+        assert_true($r['ok']);
+        assert_same(2, count($ai->calls));
+        assert_contains('=== FIX THE EMAIL ===', $ai->calls[1]['user']);
+        assert_contains('"I\'d love to"', $ai->calls[1]['user'], 'the problem is spelled out');
+        assert_contains("I'd love to help with two areas", $ai->calls[1]['user'], 'the previous email is included');
+        assert_same(good_body(), $r['data']['body']);
+        assert_same(2000, $r['input_tokens'], 'tokens of the rewrite are counted');
+    },
+    'a rewrite that is invalid, worse or fails keeps the first email' => function () {
+        $weak = str_replace('Two areas', "I'd love to help with two areas", good_body());
+        foreach (['not json', ai_reply(['body' => $weak . ' Act now!']), new AiRequestException('HTTP 503')] as $second) {
+            $r = qualifier(new FakeAiClient([ai_reply(['body' => $weak]), $second]))->analyze('https://brightlinedigital.com', sample_scrape());
+            assert_true($r['ok'], 'still a success');
+            assert_same($weak, $r['data']['body']);
+        }
+    },
+    'SKIP and good emails cost no extra call' => function () {
+        $ai = new FakeAiClient([ai_reply(['decision' => 'SKIP', 'score' => 10, 'subject' => null, 'body' => null])]);
+        qualifier($ai)->analyze('https://a.com', sample_scrape());
+        assert_same(1, count($ai->calls));
     },
     'API failure is reported without a retry storm' => function () {
         $ai = new FakeAiClient([new AiRequestException('AI API failed after 3 attempts. Last error: HTTP 529: Overloaded')]);

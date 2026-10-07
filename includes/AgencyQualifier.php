@@ -148,15 +148,99 @@ class AgencyQualifier {
 
             $out['ok'] = true;
             $out['error'] = null;
-            $out['data'] = self::chooseFallbackEmail(
-                self::applySafetyCheck(self::normalize($data), $scrape['emails'] ?? [], self::extraKnownEmails($scrape)),
-                $scrape
-            );
+            $out['data'] = $this->finish($data, $scrape);
             break;
+        }
+
+        // A weak email (no AI angle, forbidden phrases, copied examples, wrong length) gets one
+        // rewrite with the problems spelled out. The rewrite is kept only if it is a valid reply;
+        // otherwise the first email stands — this step never turns a success into a failure.
+        $issues = $out['ok'] && $out['data']['decision'] !== 'SKIP' ? self::qualityIssues((string) $out['data']['body']) : [];
+        if ($issues) {
+            $fix = $user . "\n\n=== FIX THE EMAIL ===\nYour previous email (below) broke these rules. Rewrite it so it follows every rule in STEP 3, then output the complete JSON again.\n- "
+                . implode("\n- ", $issues) . "\n\nPrevious email:\n" . $out['data']['body'];
+            try {
+                $res = $this->client->complete($this->systemPrompt, $fix, self::OUTPUT_SCHEMA);
+                $raws[] = $res['raw'];
+                $out['input_tokens'] += $res['input_tokens'];
+                $out['output_tokens'] += $res['output_tokens'];
+                $data = self::parseResponse($res['text']);
+                if ($data !== null && !self::validate($data) && $data['decision'] !== 'SKIP') {
+                    $rewritten = $this->finish($data, $scrape);
+                    // Keep whichever version breaks fewer rules.
+                    if (count(self::qualityIssues((string) $rewritten['body'])) < count($issues)) {
+                        $out['data'] = $rewritten;
+                        $out['model'] = $res['model'];
+                    }
+                }
+            } catch (AiRequestException $e) {
+                // Quota or outage on the rewrite: the first email is still a valid result.
+            }
         }
 
         $out['raw'] = implode("\n\n----- retry -----\n\n", $raws);
         return $out;
+    }
+
+    /** Post-processing every accepted reply gets: normalized, contact address checked, lead-list fallback. */
+    private function finish(array $data, array $scrape): array {
+        return self::chooseFallbackEmail(
+            self::applySafetyCheck(self::normalize($data), $scrape['emails'] ?? [], self::extraKnownEmails($scrape)),
+            $scrape
+        );
+    }
+
+    /** Words in the body from the greeting through the question (portfolio link not counted). */
+    public static function bodyWordCount(string $body): int {
+        $body = str_replace("\r\n", "\n", $body);
+        if (preg_match('/^[ \t]*best regards[ \t]*,?[ \t]*$/im', $body, $m, PREG_OFFSET_CAPTURE)) {
+            $body = substr($body, 0, $m[0][1]);
+        }
+        $body = preg_replace('#^\s*https?://\S+\s*$#m', '', $body);
+        return count(preg_split('/\s+/u', trim(preg_replace('/[*•—–-]+(?=\s)/u', ' ', (string) $body)), -1, PREG_SPLIT_NO_EMPTY));
+    }
+
+    /**
+     * Rules from STEP 3 of the prompt that weak models tend to break, in words the
+     * model can act on. Empty = the email is fine. Looser than the prompt on length,
+     * so a near miss doesn't cost another AI call.
+     */
+    public static function qualityIssues(string $body): array {
+        $issues = [];
+        if (!preg_match('/\bAI\b/', $body)) {
+            $issues[] = 'There is no AI bullet. Every email needs one bullet about AI features this agency could offer its own clients, built by Slobodan white-label (see STEP 3, point 4).';
+        }
+        $forbidden = [];
+        foreach (['leverage', 'synergy', 'seamless', 'cutting-edge', 'passionate', 'elevate', 'game-changer', 'revolutionize', 'unlock', 'supercharge',
+                  "I'd love to", 'I would love to', 'reach out', 'touch base', 'circle back', 'hope this finds you', 'hope this email finds you', 'I came across',
+                  'free', 'guarantee', 'risk-free', 'no obligation', 'act now', 'limited time', 'discount'] as $phrase) {
+            if (preg_match('/(?<![\w-])' . preg_quote($phrase, '/') . '(?![\w-])/iu', str_replace('’', "'", $body))) {
+                $forbidden[] = '"' . $phrase . '"';
+            }
+        }
+        if (strpbrk($body, '!$%') !== false) {
+            $forbidden[] = 'exclamation marks or $ / % symbols';
+        }
+        if ($forbidden) {
+            $issues[] = 'Forbidden words or symbols: ' . implode(', ', $forbidden) . '. Rephrase without them.';
+        }
+        foreach (['custom themes, complex plugins, B2B quoting, custom pricing, multilingual and performance-focused solutions',
+                  'custom business applications, APIs, integrations and real-time functionality',
+                  'LLM integrations, RAG systems, AI assistants, personalization and automated content workflows',
+                  'I can support your team as a flexible white-label engineering resource'] as $copied) {
+            if (stripos($body, $copied) !== false) {
+                $issues[] = 'Text copied from the instructions ("' . $copied . '"). Write it for this agency\'s clients and projects instead.';
+            }
+        }
+        $bullets = preg_match_all('/^\s*[*•-]\s+\*\*[^*]+\*\*/mu', $body);
+        if ($bullets < 2 || $bullets > 3) {
+            $issues[] = "The email has $bullets bullets; it needs 2 or 3, each \"* **Label** — specifics\".";
+        }
+        $words = self::bodyWordCount($body);
+        if ($words < 90 || $words > 190) {
+            $issues[] = "The email is $words words; it must be 110-160 words from the greeting through the question.";
+        }
+        return $issues;
     }
 
     /** Decodes the reply; tolerates a ```json fence or text around the object. Null if not a JSON object. */
