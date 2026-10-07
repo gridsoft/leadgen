@@ -21,7 +21,7 @@ class AgencyStore {
     private const STALE_MINUTES = 15;
 
     /** Columns of the latest analysis, joined onto agency rows for the list. */
-    private const LATEST_JOIN = 'LEFT JOIN agency_analyses an ON an.id = (SELECT MAX(id) FROM agency_analyses WHERE agency_id = a.id)';
+    public const LATEST_JOIN = 'LEFT JOIN agency_analyses an ON an.id = (SELECT MAX(id) FROM agency_analyses WHERE agency_id = a.id)';
 
     // The address an email would go to (needs a + LATEST_JOIN an): the AI's pick, else — when it chose
     // none, the verdict isn't SKIP and the site showed no email — the one saved in the lead list (same
@@ -30,7 +30,9 @@ class AgencyStore {
         AND p.contact_email IS NOT NULL AND p.contact_email <> '' ORDER BY p.id LIMIT 1)";
     private const LIST_FALLBACK_SQL = "an.to_email IS NULL AND an.decision <> 'SKIP' AND an.emails_json = '[]'";
     private const CHOSEN_EMAIL_SQL = 'COALESCE(an.to_email, IF(' . self::LIST_FALLBACK_SQL . ', LOWER(' . self::LEAD_LIST_EMAIL_SQL . '), NULL))';
-    private const TO_EMAIL_SQL = 'IF(' . self::CHOSEN_EMAIL_SQL . " IN (SELECT value FROM suppression_list WHERE type = 'email'), NULL, " . self::CHOSEN_EMAIL_SQL . ')';
+    public const TO_EMAIL_SQL = 'IF(' . self::CHOSEN_EMAIL_SQL . " IN (SELECT value FROM suppression_list WHERE type = 'email'), NULL, " . self::CHOSEN_EMAIL_SQL . ')';
+    /** An agency ready to email (a + LATEST_JOIN an): analyzed, not contacted yet, verdict SEND, with an address. */
+    public const READY_SQL = "a.status = 'analyzed' AND an.decision = 'SEND' AND " . self::TO_EMAIL_SQL . ' IS NOT NULL';
 
     /**
      * Adds pasted URLs (one per line). Existing domains are not duplicated.
@@ -230,7 +232,7 @@ class AgencyStore {
     public static function readyToSendCount(PDO $pdo): int {
         return (int) $pdo->query(
             'SELECT COUNT(*) FROM agencies a ' . self::LATEST_JOIN
-            . " WHERE a.status = 'analyzed' AND an.decision = 'SEND' AND " . self::TO_EMAIL_SQL . ' IS NOT NULL'
+            . ' WHERE ' . self::READY_SQL
         )->fetchColumn();
     }
 

@@ -62,6 +62,7 @@ try { if (localStorage.getItem("sidebarCollapsed") === "1") document.documentEle
     // [activeNav key, href, label, SVG path data (24×24, stroked), optional sub-items of the same shape]
     $navItems = [
         ["dashboard", "index.php", "Dashboard", "<rect x=\"3\" y=\"3\" width=\"7\" height=\"9\" rx=\"1.5\"/><rect x=\"14\" y=\"3\" width=\"7\" height=\"5\" rx=\"1.5\"/><rect x=\"14\" y=\"12\" width=\"7\" height=\"9\" rx=\"1.5\"/><rect x=\"3\" y=\"16\" width=\"7\" height=\"5\" rx=\"1.5\"/>"],
+        ["stats", "stats.php", "Statistics", "<path d=\"M3 21h18\"/><path d=\"M6 17v-6\"/><path d=\"M11 17V5\"/><path d=\"M16 17v-9\"/><path d=\"M21 17v-3\"/>"],
         ["search", "search.php", "Find prospects", "<circle cx=\"11\" cy=\"11\" r=\"7\"/><path d=\"m20 20-3.5-3.5\"/>"],
         ["clutch", "clutch_import.php", "Import from Clutch", "<path d=\"M12 3v12\"/><path d=\"m7 10 5 5 5-5\"/><path d=\"M5 21h14\"/>"],
         ["add", "add.php", "Add manually", "<circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M12 8v8M8 12h8\"/>"],

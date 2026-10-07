@@ -1127,3 +1127,88 @@ details.add-card > summary .muted { font-size: .82rem; }
 .next-channel { font-size: .86rem; }
 .send-usage { margin-left: .4rem; font-size: .76rem; color: var(--text-faint); white-space: nowrap; }
 #sendEmail { box-shadow: 0 1px 2px var(--shadow); }
+
+/* ---------- Statistics (stats.php) ---------- */
+/* Chart colors: the validated dark categorical palette (adjacent CVD ΔE ≥ 8.4, all ≥ 3:1 on --card-bg),
+   in fixed order — slot 1 is also the single-series color. Text never wears these; marks only. */
+.stats {
+    --series-1: #3987e5;
+    --series-2: #d95926;
+    --series-3: #199e70;
+    --series-4: #c98500;
+    --series-5: #d55181;
+    --series-6: #008300;
+    --viz-grid: #2c2c2a;
+    --viz-axis: #383835;
+}
+.stats h2 { margin-bottom: .35rem; }
+.stats .hint { margin-bottom: 1rem; }
+.kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-bottom: 1.25rem; }
+.kpi {
+    background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px;
+    padding: 1rem 1.1rem; color: var(--text); text-decoration: none; display: block;
+}
+.kpi-label { font-size: .8rem; color: var(--text-muted); font-weight: 600; }
+.kpi-value { font-size: 1.9rem; font-weight: 700; line-height: 1.15; margin: .3rem 0 .15rem; }
+.kpi-sub { font-size: .78rem; color: var(--text-faint); }
+.kpi-hero { border-color: var(--green-border); background: var(--green-soft); }
+.kpi-hero .kpi-value { font-size: 3rem; }
+a.kpi-hero:hover { border-color: var(--green); }
+
+.viz-legend { list-style: none; display: flex; flex-wrap: wrap; gap: .4rem 1.1rem; padding: 0; margin: 0 0 1rem; font-size: .82rem; color: var(--text); }
+.viz-legend li { display: inline-flex; align-items: center; gap: .4rem; }
+.viz-swatch { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+
+.stage-bars { display: flex; flex-direction: column; gap: .7rem; }
+.stage-row { display: grid; grid-template-columns: minmax(140px, 220px) 1fr; gap: 1rem; align-items: center; }
+.stage-row-all { padding-bottom: .7rem; border-bottom: 1px solid var(--row-border); }
+.stage-name { font-size: .86rem; overflow-wrap: anywhere; }
+.stage-row-all .stage-name { font-weight: 700; }
+/* 2px surface gap between segments; square at the baseline, 4px rounded data-end. */
+.stage-bar { display: flex; gap: 2px; height: 20px; }
+.stage-seg { min-width: 3px; height: 100%; cursor: default; outline-offset: 2px; }
+.stage-seg:last-child { border-radius: 0 4px 4px 0; }
+.stage-seg:hover, .stage-seg:focus-visible { filter: brightness(1.25); }
+
+.table-scroll { overflow-x: auto; }
+.stats-table th, .stats-table td { padding: .6rem .75rem; white-space: nowrap; }
+.stats-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+.stats .muted { color: var(--text-faint); }
+.stats-table tr.total-row td { font-weight: 700; border-top: 1px solid var(--border); }
+
+.small-multiples { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.5rem 2rem; }
+.column-chart { margin: 0; }
+.column-chart figcaption { font-size: .86rem; font-weight: 600; margin-bottom: .6rem; }
+.column-chart figcaption .muted { font-weight: 400; margin-left: .35rem; }
+.col-plot { position: relative; height: 120px; border-top: 1px solid var(--viz-grid); border-bottom: 1px solid var(--viz-axis); }
+.col-max { position: absolute; top: -.6rem; right: 0; font-size: .7rem; color: var(--text-faint); background: var(--card-bg); padding-left: .3rem; font-variant-numeric: tabular-nums; }
+.col-bars { display: flex; gap: 2px; height: 100%; align-items: stretch; }
+/* The whole column is the hit target; the painted bar grows from the baseline. */
+.col { flex: 1 1 0; display: flex; align-items: flex-end; justify-content: center; outline-offset: 1px; }
+.col-bar { width: 100%; max-width: 24px; background: var(--series-1); border-radius: 4px 4px 0 0; }
+.col:hover .col-bar, .col:focus-visible .col-bar { filter: brightness(1.25); }
+.col:hover, .col:focus-visible { background: var(--hover); }
+.col-axis { display: flex; justify-content: space-between; font-size: .72rem; color: var(--text-faint); margin-top: .35rem; }
+.table-view { margin-top: 1rem; }
+.table-view summary { cursor: pointer; font-size: .82rem; color: var(--text-muted); }
+
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.25rem; }
+.stats-grid .card { margin-bottom: 0; }
+.hbar-row { margin-bottom: .75rem; }
+.hbar-name { font-size: .84rem; margin-bottom: .3rem; }
+.hbar-track { display: flex; align-items: center; gap: .5rem; }
+.hbar { display: block; height: 14px; min-width: 2px; background: var(--series-1); border-radius: 0 4px 4px 0; }
+.hbar-value { font-size: .8rem; color: var(--text); font-variant-numeric: tabular-nums; }
+
+.viz-tip {
+    position: fixed; z-index: 50; pointer-events: none; display: flex; flex-direction: column; gap: .1rem;
+    background: var(--surface-2); border: 1px solid var(--border); border-radius: 6px;
+    padding: .4rem .6rem; font-size: .78rem; box-shadow: 0 4px 14px var(--shadow);
+}
+.viz-tip strong { color: var(--text); font-size: .86rem; }
+.viz-tip span { color: var(--text-muted); }
+.viz-tip[hidden] { display: none; }
+
+@media (max-width: 640px) {
+    .stage-row { grid-template-columns: 1fr; gap: .35rem; }
+}
