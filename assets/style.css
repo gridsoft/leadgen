@@ -131,6 +131,9 @@ body {
 }
 .sidebar-nav a:hover { background: var(--sidebar-hover); color: var(--text); }
 .sidebar-nav a.active { background: var(--green-soft); color: var(--sidebar-text-active); font-weight: 600; box-shadow: inset 3px 0 0 var(--green); }
+/* Sub-item (e.g. a saved filter) under the link above it. */
+.sidebar-nav a.sidebar-sub { height: 2.1rem; padding-left: 2.1rem; font-size: .84rem; }
+.sidebar-nav a.sidebar-sub .icon { width: .95rem; height: .95rem; }
 .sidebar .icon, .sidebar-toggle svg {
     width: 1.15rem;
     height: 1.15rem;

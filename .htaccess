@@ -1,3 +1,11 @@
 # Saved Clutch.co pages (clutch_import.php) can exceed PHP's 2M default.
 php_value upload_max_filesize 20M
 php_value post_max_size 64M
+
+# LiteSpeed (the live host) stops PHP when the browser disconnects or a request
+# stays silent too long; agency analysis can take minutes, so let it finish.
+# Apache (WAMP) skips this block.
+<IfModule LiteSpeed>
+RewriteEngine On
+RewriteRule .* - [E=noabort:1,E=noconntimeout:1]
+</IfModule>

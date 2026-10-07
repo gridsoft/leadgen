@@ -410,6 +410,14 @@ require __DIR__ . '/includes/layout_header.php';
   }).then(function(r) { return r.json(); }).then(function(data) {
     clearInterval(timer);
     if (!data.ok && data.message) { stage.textContent = data.message; return; }
+    if (data.skipped && data.status === 'analyzing') {
+      // Another request owns this run (e.g. from a tab closed mid-run): check
+      // back periodically instead of reloading straight into the same answer.
+      stage.textContent = 'Another run of this analysis (started <?= htmlspecialchars(date('H:i', strtotime($agency['updated_at']))) ?>) is still going. '
+        + 'If it was cut off, it can be restarted 15 minutes after it began. Checking again in 15 s…';
+      setTimeout(function() { location.reload(); }, 15000);
+      return;
+    }
     stage.textContent = 'Done. Loading the result…';
     location.href = 'agency_view.php?id=<?= (int) $id ?>';
   }).catch(function() {
