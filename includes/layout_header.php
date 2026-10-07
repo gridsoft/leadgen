@@ -23,23 +23,40 @@ try { if (localStorage.getItem("sidebarCollapsed") === "1") document.documentEle
   <div class="sidebar-brand"><span class="brand-text">Leadgen</span></div>
   <nav class="sidebar-nav">
     <?php
-    // "For analysis" (includes/ForAnalysis.php): a saved dashboard filter, listed under
-    // Agency outreach. It's the active item when the dashboard shows exactly these filters.
-    require_once __DIR__ . '/ForAnalysis.php';
-    $forAnalysisFilters = ForAnalysis::FILTERS;
-    $forAnalysisHref = ForAnalysis::dashboardUrl();
-    if ($activeNav === 'dashboard' && basename($_SERVER['SCRIPT_NAME'] ?? '') === 'index.php' && trim((string) ($_GET['q'] ?? '')) === '') {
-        $matches = true;
-        foreach (['status', 'category', 'source', 'email', 'contacted', 'ai'] as $filterKey) {
+    // Saved filters listed under Agency outreach. One is the active item when its page
+    // shows exactly its filters (any other filter, or a search, means a different view).
+    $showsExactly = function (string $page, array $filters, array $filterKeys): bool {
+        if (basename($_SERVER['SCRIPT_NAME'] ?? '') !== $page || trim((string) ($_GET['q'] ?? '')) !== '') {
+            return false;
+        }
+        foreach ($filterKeys as $filterKey) {
             $current = array_map('strval', (array) ($_GET[$filterKey] ?? []));
-            $wanted = $forAnalysisFilters[$filterKey] ?? [];
+            $wanted = $filters[$filterKey] ?? [];
             sort($current);
             sort($wanted);
-            $matches = $matches && $current === $wanted;
+            if ($current !== $wanted) {
+                return false;
+            }
         }
-        if ($matches) {
-            $activeNav = 'for_analysis';
-        }
+        return true;
+    };
+    // "For analysis" (includes/ForAnalysis.php): dashboard prospects still to analyze.
+    require_once __DIR__ . '/ForAnalysis.php';
+    if ($activeNav === 'dashboard' && $showsExactly('index.php', ForAnalysis::FILTERS, ['status', 'category', 'source', 'email', 'contacted', 'ai'])) {
+        $activeNav = 'for_analysis';
+    }
+    // "Ready to send": analyzed agencies with a SEND verdict and an address, not emailed yet,
+    // best score first. The same agencies AgencyStore::readyToSendCount() counts.
+    $readyToSendFilters = ['decision' => ['SEND'], 'status' => ['analyzed'], 'email' => ['yes']];
+    $readyToSendHref = 'agency_outreach.php?' . http_build_query(['sort' => 'score', 'dir' => 'desc'] + $readyToSendFilters);
+    if ($activeNav === 'agencies' && $showsExactly('agency_outreach.php', $readyToSendFilters, ['decision', 'status', 'follow_up', 'platform', 'email'])) {
+        $activeNav = 'ready_to_send';
+    }
+    // "Sent": every agency emailed, including those that replied, newest first.
+    $sentFilters = ['status' => ['sent', 'replied']];
+    $sentHref = 'agency_outreach.php?' . http_build_query(['sort' => 'sent', 'dir' => 'desc'] + $sentFilters);
+    if ($activeNav === 'agencies' && $showsExactly('agency_outreach.php', $sentFilters, ['decision', 'status', 'follow_up', 'platform', 'email'])) {
+        $activeNav = 'sent';
     }
 
     // [activeNav key, href, label, SVG path data (24×24, stroked), optional sub-items of the same shape]
@@ -51,7 +68,9 @@ try { if (localStorage.getItem("sidebarCollapsed") === "1") document.documentEle
         ["bulk_analyze", "bulk_analyze.php", "Bulk analyze", "<path d=\"M13 2 4 14h7l-1 8 9-12h-7l1-8z\"/>"],
         ["email_finder", "email_finder.php", "Find emails", "<rect x=\"3\" y=\"5\" width=\"18\" height=\"14\" rx=\"2\"/><path d=\"m3 7 9 6 9-6\"/>"],
         ["agencies", "agency_outreach.php", "Agency outreach", "<rect x=\"3\" y=\"7\" width=\"18\" height=\"13\" rx=\"2\"/><path d=\"M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2\"/><path d=\"M3 13h18\"/>", [
-            ["for_analysis", $forAnalysisHref, "For analysis", "<path d=\"M3 5h18l-7 8v6l-4 2v-8z\"/>"],
+            ["for_analysis", ForAnalysis::dashboardUrl(), "For analysis", "<path d=\"M3 5h18l-7 8v6l-4 2v-8z\"/>"],
+            ["ready_to_send", $readyToSendHref, "Ready to send", "<path d=\"m22 2-7 20-4-9-9-4z\"/><path d=\"M22 2 11 13\"/>"],
+            ["sent", $sentHref, "Sent", "<path d=\"M20 6 9 17l-5-5\"/>"],
         ]],
     ];
     foreach ($navItems as $item):

@@ -23,6 +23,15 @@ class AgencyStore {
     /** Columns of the latest analysis, joined onto agency rows for the list. */
     private const LATEST_JOIN = 'LEFT JOIN agency_analyses an ON an.id = (SELECT MAX(id) FROM agency_analyses WHERE agency_id = a.id)';
 
+    // The address an email would go to (needs a + LATEST_JOIN an): the AI's pick, else — when it chose
+    // none, the verdict isn't SKIP and the site showed no email — the one saved in the lead list (same
+    // rule as agency_view.php). An address that bounced (suppression_list) counts as none.
+    private const LEAD_LIST_EMAIL_SQL = "(SELECT p.contact_email FROM prospects p WHERE p.website_domain = a.domain
+        AND p.contact_email IS NOT NULL AND p.contact_email <> '' ORDER BY p.id LIMIT 1)";
+    private const LIST_FALLBACK_SQL = "an.to_email IS NULL AND an.decision <> 'SKIP' AND an.emails_json = '[]'";
+    private const CHOSEN_EMAIL_SQL = 'COALESCE(an.to_email, IF(' . self::LIST_FALLBACK_SQL . ', LOWER(' . self::LEAD_LIST_EMAIL_SQL . '), NULL))';
+    private const TO_EMAIL_SQL = 'IF(' . self::CHOSEN_EMAIL_SQL . " IN (SELECT value FROM suppression_list WHERE type = 'email'), NULL, " . self::CHOSEN_EMAIL_SQL . ')';
+
     /**
      * Adds pasted URLs (one per line). Existing domains are not duplicated.
      *
@@ -110,6 +119,7 @@ class AgencyStore {
      *   status?: string[],     agency statuses
      *   follow_up?: string[],  'due' (overdue) / 'upcoming'
      *   platform?: string[],   platform family: WordPress, Wix… or 'unknown'
+     *   email?: string[],      'yes' (has an address to email) / 'no'
      *   overdue?: bool, q?: string, id?: int
      * } $filters
      */
@@ -120,6 +130,7 @@ class AgencyStore {
             'analyzed' => 'a.analyzed_at',
             'status' => 'a.status',
             'follow_up' => 'a.follow_up_at',
+            'sent' => 'a.sent_at',
             'created' => 'a.created_at',
         ];
         $orderBy = $sorts[$sort] ?? $sorts['created'];
@@ -171,14 +182,17 @@ class AgencyStore {
             $params['id'] = (int) $filters['id'];
         }
 
-        // No email on the site and none chosen: fall back to the one saved in the lead list (same rule as agency_view.php).
-        $leadListEmail = "(SELECT p.contact_email FROM prospects p WHERE p.website_domain = a.domain
-                             AND p.contact_email IS NOT NULL AND p.contact_email <> '' ORDER BY p.id LIMIT 1)";
-        $fallback = "an.to_email IS NULL AND an.decision <> 'SKIP' AND an.emails_json = '[]'";
+        // Both options ticked is the same as no email filter.
+        if (($filters['email'] ?? []) === ['yes']) {
+            $where[] = self::TO_EMAIL_SQL . ' IS NOT NULL';
+        } elseif (($filters['email'] ?? []) === ['no']) {
+            $where[] = self::TO_EMAIL_SQL . ' IS NULL';
+        }
+
+        $fallback = self::LIST_FALLBACK_SQL;
+        $leadListEmail = self::LEAD_LIST_EMAIL_SQL;
         $sql = "SELECT a.*, an.id AS analysis_id, an.decision, an.score, an.platform, an.warnings_json,
-                       -- an address that bounced (suppression_list) is never shown as the contact
-                       IF(COALESCE(an.to_email, IF($fallback, LOWER($leadListEmail), NULL)) IN (SELECT value FROM suppression_list WHERE type = 'email'),
-                          NULL, COALESCE(an.to_email, IF($fallback, LOWER($leadListEmail), NULL))) AS to_email,
+                       " . self::TO_EMAIL_SQL . " AS to_email,
                        IF(an.to_email_source = 'lead_list' OR ($fallback AND $leadListEmail IS NOT NULL), 1, 0) AS to_email_from_list,
                        (" . self::overdueSql() . ') AS is_overdue
                 FROM agencies a ' . self::LATEST_JOIN
@@ -202,17 +216,21 @@ class AgencyStore {
             'status' => $pdo->query('SELECT status, COUNT(*) FROM agencies GROUP BY status')->fetchAll(PDO::FETCH_KEY_PAIR),
             'decision' => $pdo->query("SELECT COALESCE(an.decision, 'none'), COUNT(*) FROM agencies a " . self::LATEST_JOIN . ' GROUP BY 1')->fetchAll(PDO::FETCH_KEY_PAIR),
             'platform' => $pdo->query('SELECT ' . self::PLATFORM_FAMILY_SQL . ' AS fam, COUNT(*) FROM agencies a ' . self::LATEST_JOIN . ' WHERE an.id IS NOT NULL GROUP BY fam ORDER BY COUNT(*) DESC')->fetchAll(PDO::FETCH_KEY_PAIR),
+            'email' => $pdo->query('SELECT IF(' . self::TO_EMAIL_SQL . " IS NULL, 'no', 'yes'), COUNT(*) FROM agencies a " . self::LATEST_JOIN . ' GROUP BY 1')->fetchAll(PDO::FETCH_KEY_PAIR),
             'overdue' => (int) $pdo->query('SELECT COUNT(*) FROM agencies a WHERE ' . self::overdueSql())->fetchColumn(),
             'upcoming' => (int) $pdo->query('SELECT COUNT(*) FROM agencies a WHERE ' . self::upcomingSql())->fetchColumn(),
             'total' => (int) $pdo->query('SELECT COUNT(*) FROM agencies')->fetchColumn(),
         ];
     }
 
-    /** Agencies ready to email: analyzed, not contacted yet, latest verdict SEND with an address to send to. */
+    /**
+     * Agencies ready to email: analyzed, not contacted yet, latest verdict SEND, with an address to
+     * send to. The sidebar's "Ready to send" link lists the same agencies.
+     */
     public static function readyToSendCount(PDO $pdo): int {
         return (int) $pdo->query(
             'SELECT COUNT(*) FROM agencies a ' . self::LATEST_JOIN
-            . " WHERE a.status = 'analyzed' AND an.decision = 'SEND' AND an.to_email IS NOT NULL AND an.to_email != ''"
+            . " WHERE a.status = 'analyzed' AND an.decision = 'SEND' AND " . self::TO_EMAIL_SQL . ' IS NOT NULL'
         )->fetchColumn();
     }
 

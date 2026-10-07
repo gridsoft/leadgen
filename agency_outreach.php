@@ -59,6 +59,8 @@ $statusFilter = multi_param('status', array_keys($statusGroups));
 // ?overdue=1 is the older "Follow-up due" link.
 $followUpFilter = ($_GET['overdue'] ?? '') === '1' ? ['due'] : multi_param('follow_up', array_keys($followUpLabels));
 $platformFilter = multi_param('platform', $platforms);
+$emailLabels = ['yes' => 'Has email', 'no' => 'No email'];
+$emailFilter = multi_param('email', array_keys($emailLabels));
 $sort = $_GET['sort'] ?? 'created';
 $dir = ($_GET['dir'] ?? 'desc') === 'asc' ? 'asc' : 'desc';
 
@@ -67,6 +69,7 @@ $agencies = AgencyStore::listAgencies($pdo, [
     'status' => array_merge([], ...array_map(fn($g) => $statusGroups[$g], $statusFilter)),
     'follow_up' => $followUpFilter,
     'platform' => $platformFilter,
+    'email' => $emailFilter,
     'q' => $searchQuery,
 ], $sort, $dir);
 
@@ -94,6 +97,11 @@ $filterDefs = filter_defs_prepare([
         'values' => $platforms,
         'options' => array_map(fn($p) => [$p === 'unknown' ? 'Unknown' : $p, (int) $counts['platform'][$p]], $platforms),
     ],
+    'email' => [
+        'label' => 'Email', 'empty' => 'All', 'selected' => $emailFilter,
+        'values' => array_keys($emailLabels),
+        'options' => array_map(fn($e, $label) => [$label, (int) ($counts['email'][$e] ?? 0)], array_keys($emailLabels), $emailLabels),
+    ],
 ]);
 $pendingIds = AgencyStore::pendingIds($pdo);
 
@@ -108,7 +116,7 @@ foreach ($existingIds as $eid) {
 }
 
 function list_url(array $overrides): string {
-    $params = array_merge(array_intersect_key($_GET, array_flip(['q', 'decision', 'status', 'follow_up', 'platform', 'overdue', 'sort', 'dir'])), $overrides);
+    $params = array_merge(array_intersect_key($_GET, array_flip(['q', 'decision', 'status', 'follow_up', 'platform', 'email', 'overdue', 'sort', 'dir'])), $overrides);
     // A filter removed by the bar also drops the legacy ?overdue=1.
     if (array_key_exists('follow_up', $overrides)) {
         $params['overdue'] = null;
