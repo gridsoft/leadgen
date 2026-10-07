@@ -247,10 +247,12 @@ class AgencyStore {
      * Scrapes the site, calls the AI and stores a new analysis row. The
      * agency must already be claimed. Every failure is recorded on the row —
      * this never throws for a bad site or a bad AI reply, so a batch keeps going.
+     * The one exception: with $waitForQuota, a used-up daily AI quota puts the
+     * agency back to 'pending' (nothing recorded) and throws AiQuotaExhausted.
      *
      * @return string the agency's new status
      */
-    public static function process(PDO $pdo, int $id, AgencyScraper $scraper, callable $makeQualifier): string {
+    public static function process(PDO $pdo, int $id, AgencyScraper $scraper, callable $makeQualifier, bool $waitForQuota = false): string {
         $agency = self::getAgency($pdo, $id);
         if (!$agency) {
             return 'missing';
@@ -280,6 +282,12 @@ class AgencyStore {
             /** @var AgencyQualifier $qualifier */
             $qualifier = $makeQualifier();
             $ai = $qualifier->analyze($agency['normalized_url'], $scrape);
+        } catch (AiQuotaExhausted $e) {
+            if ($waitForQuota) {
+                $pdo->prepare("UPDATE agencies SET status = 'pending' WHERE id = :id")->execute(['id' => $id]);
+                throw $e;
+            }
+            $ai = ['ok' => false, 'data' => null, 'error' => $e->getMessage(), 'raw' => '', 'model' => null, 'input_tokens' => 0, 'output_tokens' => 0];
         } catch (Throwable $e) {
             $ai = ['ok' => false, 'data' => null, 'error' => $e->getMessage(), 'raw' => '', 'model' => null, 'input_tokens' => 0, 'output_tokens' => 0];
         }

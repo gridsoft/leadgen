@@ -23,10 +23,11 @@ try { if (localStorage.getItem("sidebarCollapsed") === "1") document.documentEle
   <div class="sidebar-brand"><span class="brand-text">Leadgen</span></div>
   <nav class="sidebar-nav">
     <?php
-    // "For analysis": a saved dashboard filter, listed under Agency outreach.
-    // It's the active item when the dashboard shows exactly these filters.
-    $forAnalysisFilters = ['category' => ['web development agency'], 'email' => ['yes'], 'contacted' => ['no'], 'ai' => ['not_analyzed']];
-    $forAnalysisHref = 'index.php?' . http_build_query(['sort' => 'created', 'dir' => 'desc', 'per_page' => 25, 'q' => ''] + $forAnalysisFilters);
+    // "For analysis" (includes/ForAnalysis.php): a saved dashboard filter, listed under
+    // Agency outreach. It's the active item when the dashboard shows exactly these filters.
+    require_once __DIR__ . '/ForAnalysis.php';
+    $forAnalysisFilters = ForAnalysis::FILTERS;
+    $forAnalysisHref = ForAnalysis::dashboardUrl();
     if ($activeNav === 'dashboard' && basename($_SERVER['SCRIPT_NAME'] ?? '') === 'index.php' && trim((string) ($_GET['q'] ?? '')) === '') {
         $matches = true;
         foreach (['status', 'category', 'source', 'email', 'contacted', 'ai'] as $filterKey) {

@@ -166,6 +166,15 @@ return [
         assert_same(1, count($ai->calls), 'transport errors were already retried inside the client');
         assert_contains('529', $r['error']);
     },
+    'a used-up daily quota is passed to the caller, not reported as a failed reply' => function () {
+        $ai = new FakeAiClient([new AiQuotaExhausted('The free daily AI quota is used up for every model.')]);
+        try {
+            qualifier($ai)->analyze('https://a.com', sample_scrape());
+            throw new AssertionFailed('expected AiQuotaExhausted');
+        } catch (AiQuotaExhausted $e) {
+            assert_same(1, count($ai->calls));
+        }
+    },
     'lead-list emails are offered to the AI, labelled' => function () {
         $scrape = sample_scrape();
         $scrape['emails'] = [];

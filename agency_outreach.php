@@ -4,6 +4,7 @@ require_once __DIR__ . '/includes/db.php';
 require_once __DIR__ . '/includes/AgencyStore.php';
 require_once __DIR__ . '/includes/AgencyViews.php';
 require_once __DIR__ . '/includes/FilterBar.php';
+require_once __DIR__ . '/includes/Settings.php';
 
 $pdo = get_db();
 
@@ -36,6 +37,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 // Filters — same multi-select filter bar as the dashboard (includes/FilterBar.php).
 $counts = AgencyStore::counts($pdo);
+// Background analysis (cron_analyze.php): its last run, and whether it's waiting for the AI quota to reset.
+$cronLast = json_decode(Settings::get($pdo, 'cron_analyze_last'), true);
+$quotaResetAt = (int) Settings::get($pdo, 'ai_quota_reset_at', '0');
 $statusGroups = [
     'pending' => ['pending', 'analyzing'],
     'analyzed' => ['analyzed'],
@@ -132,6 +136,14 @@ require __DIR__ . '/includes/layout_header.php';
   <code>config.local.php</code> as <code>'ai_api_key' =&gt; '…'</code> (see <code>config.local.php.example</code> and
   <a href="agency_settings.php">Settings</a>).
 </div>
+<?php endif; ?>
+
+<?php if (is_array($cronLast)): ?>
+<p class="hint">
+  Background analysis: last run <?= date('M j, H:i', (int) $cronLast['at']) ?> —
+  <?= (int) $cronLast['analyzed'] ?> analyzed, <?= (int) $cronLast['failed'] ?> failed (<?= htmlspecialchars((string) $cronLast['stopped']) ?>).
+  <?php if ($quotaResetAt > time()): ?>Paused until <?= date('M j, H:i', $quotaResetAt) ?>, when the free AI quota resets.<?php endif; ?>
+</p>
 <?php endif; ?>
 
 <?php if ($added): ?><div class="notice notice-ok">Added <?= $added ?> agenc<?= $added === 1 ? 'y' : 'ies' ?>. Analyzing now; keep this page open until it finishes.</div><?php endif; ?>

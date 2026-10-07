@@ -118,6 +118,8 @@ class AgencyQualifier {
         for ($try = 1; $try <= 2; $try++) {
             try {
                 $res = $this->client->complete($this->systemPrompt, $user, self::OUTPUT_SCHEMA);
+            } catch (AiQuotaExhausted $e) {
+                throw $e; // the caller decides: a failure (browser) or wait for the reset (cron_analyze.php)
             } catch (AiRequestException $e) {
                 // Rate limits / outages were already retried inside the client; don't hammer it again.
                 if ($e->raw !== null) {

@@ -21,6 +21,19 @@ function gemini_ok(string $text, string $finish = 'STOP'): array {
     ])];
 }
 
+/** Free-tier 429 for a per-day quota, shaped like Google's. */
+function gemini_daily_quota(): array {
+    return ['status' => 429, 'headers' => [], 'error' => null, 'body' => json_encode(['error' => [
+        'code' => 429, 'message' => 'You exceeded your current quota', 'status' => 'RESOURCE_EXHAUSTED', 'details' => [
+            ['@type' => 'type.googleapis.com/google.rpc.QuotaFailure', 'violations' => [[
+                'quotaMetric' => 'generativelanguage.googleapis.com/generate_content_free_tier_requests',
+                'quotaId' => 'GenerateRequestsPerDayPerProjectPerModel-FreeTier',
+            ]]],
+            ['@type' => 'type.googleapis.com/google.rpc.RetryInfo', 'retryDelay' => '41s'],
+        ],
+    ]])];
+}
+
 function gemini_client(array $responses, array &$requests, ?array &$sleeps = null, array $fallbacks = []): GeminiClient {
     $sleeps = [];
     return new GeminiClient(GEMINI_KEY, 'gemini-3.8-flash', GeminiClient::DEFAULT_ENDPOINT,
@@ -118,6 +131,34 @@ return [
             assert_same(6, count($requests));
             assert_contains('gemini-3.8-flash: failed after 3 attempts', $e->getMessage());
             assert_contains('gemini-3.5-flash: failed after 3 attempts', $e->getMessage());
+        }
+    },
+    'a used-up daily quota (429 PerDay) is not retried; the next model is tried at once' => function () {
+        $requests = [];
+        $res = gemini_client([gemini_daily_quota(), gemini_ok('{}')], $requests, $sleeps, ['gemini-3.5-flash-lite'])->complete('S', 'U', []);
+        assert_same(2, count($requests), 'one call to the used-up model, then the fallback');
+        assert_contains('/models/gemini-3.5-flash-lite:generateContent', $requests[1]['url']);
+        assert_same([], $sleeps, 'no waiting');
+        assert_same('gemini-3.8-flash', $res['model']);
+    },
+    'every model out of daily quota throws AiQuotaExhausted' => function () {
+        $requests = [];
+        try {
+            gemini_client([gemini_daily_quota(), gemini_daily_quota()], $requests, $sleeps, ['gemini-3.5-flash'])->complete('S', 'U', []);
+            throw new AssertionFailed('expected an exception');
+        } catch (AiQuotaExhausted $e) {
+            assert_same(2, count($requests));
+            assert_contains('daily quota used up', $e->getMessage());
+        }
+    },
+    'one model out of quota and another overloaded is a normal failure, not AiQuotaExhausted' => function () {
+        $requests = [];
+        $busy = ['status' => 503, 'headers' => [], 'error' => null, 'body' => '{"error":{"message":"high demand"}}'];
+        try {
+            gemini_client([gemini_daily_quota(), $busy, $busy, $busy], $requests, $sleeps, ['gemini-3.5-flash'])->complete('S', 'U', []);
+            throw new AssertionFailed('expected an exception');
+        } catch (AiRequestException $e) {
+            assert_true(!$e instanceof AiQuotaExhausted, 'the overloaded model may answer on the next run');
         }
     },
     'a bad key (400) does not try other models' => function () {

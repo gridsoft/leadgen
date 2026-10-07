@@ -24,6 +24,12 @@ class AiRequestException extends RuntimeException {
 /** One model stayed overloaded / rate-limited / unavailable; a client with fallback models tries the next. */
 class AiModelUnavailable extends AiRequestException {}
 
+/** A model's free daily quota is used up: no retry can succeed before the daily reset. */
+class AiDailyQuotaUsed extends AiModelUnavailable {}
+
+/** Every configured model's daily quota is used up, so nothing will answer until it resets. */
+class AiQuotaExhausted extends AiRequestException {}
+
 final class AiClientFactory {
     /** Builds the client named by config 'ai_provider'. Throws if it isn't configured. */
     public static function fromConfig(): AiClient {
@@ -279,12 +285,17 @@ class GeminiClient implements AiClient {
 
     public function complete(string $system, string $user, array $schema): array {
         $failures = [];
+        $allOutOfQuota = true;
         foreach (array_values(array_unique(array_merge([$this->model], $this->fallbackModels))) as $model) {
             try {
                 return $this->completeWithModel($model, $system, $user, $schema);
             } catch (AiModelUnavailable $e) {
                 $failures[] = "$model: " . $e->getMessage();
+                $allOutOfQuota = $allOutOfQuota && $e instanceof AiDailyQuotaUsed;
             }
+        }
+        if ($allOutOfQuota) {
+            throw new AiQuotaExhausted('The free daily AI quota is used up for every model. ' . implode(' | ', $failures));
         }
         throw new AiRequestException('No Gemini model could answer. ' . implode(' | ', $failures));
     }
@@ -310,6 +321,10 @@ class GeminiClient implements AiClient {
             $res = ($this->transport)($url, $headers, $payload);
             $status = $res['status'];
 
+            // A per-minute limit clears in seconds and is worth retrying; a per-day one isn't.
+            if ($status === 429 && self::isDailyQuota($res['body'])) {
+                throw new AiDailyQuotaUsed('daily quota used up (HTTP 429)');
+            }
             if ($status === 0 || $status === 429 || $status >= 500) {
                 $lastError = $status === 0 ? 'Connection failed: ' . ($res['error'] ?? 'unknown error') : "HTTP $status: " . self::errorMessage($res['body']);
                 if ($attempt < self::MAX_ATTEMPTS) {
@@ -363,6 +378,18 @@ class GeminiClient implements AiClient {
         }
 
         throw new AiModelUnavailable('failed after ' . self::MAX_ATTEMPTS . " attempts. Last error: $lastError");
+    }
+
+    /** Whether a 429 body names a per-day quota (e.g. "GenerateRequestsPerDayPerProjectPerModel-FreeTier"). */
+    private static function isDailyQuota(string $body): bool {
+        foreach (json_decode($body, true)['error']['details'] ?? [] as $detail) {
+            foreach ($detail['violations'] ?? [] as $violation) {
+                if (stripos((string) ($violation['quotaId'] ?? ''), 'PerDay') !== false) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     /** Retry-After header, else the RetryInfo delay Google puts in 429 bodies ("30s"), capped at 60 s; else 2 s then 8 s. */
