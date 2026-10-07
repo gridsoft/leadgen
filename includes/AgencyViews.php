@@ -14,6 +14,7 @@ const AGENCY_STATUS_LABELS = [
     'sent' => 'Sent',
     'replied' => 'Replied',
     'not_interested' => 'Not interested',
+    'ignored' => 'Ignored',
 ];
 
 const AGENCY_DECISION_LABELS = [
@@ -86,6 +87,13 @@ function render_agency_row(array $a): string {
   </td>
   <td>
     <?= agency_status_badge($a['status']) ?>
+    <?php if ($a['status'] === 'sent'): ?>
+      <button type="button" class="btn-mark btn-row-action" data-id="<?= (int) $a['id'] ?>" data-action="mark_replied" title="They wrote back: mark this agency as replied">Got reply</button>
+    <?php elseif ($a['status'] === 'analyzed'): ?>
+      <button type="button" class="btn-mark btn-ignore btn-row-action" data-id="<?= (int) $a['id'] ?>" data-action="ignore" title="Don't email this agency: hide it from Ready to send">Ignore</button>
+    <?php elseif ($a['status'] === 'ignored'): ?>
+      <button type="button" class="btn-mark btn-row-action" data-id="<?= (int) $a['id'] ?>" data-action="reset_outreach" title="Bring it back as an analyzed agency">Undo</button>
+    <?php endif; ?>
     <?php if ($lowText): ?><span class="agency-warn" title="<?= h(AgencyScraper::LOW_TEXT_WARNING) ?>">JS site</span><?php endif; ?>
     <?php if (!empty($a['last_error']) && in_array($a['status'], ['fetch_failed', 'ai_failed'], true)): ?>
       <div class="agency-error" title="<?= h($a['last_error']) ?>"><?= h(mb_strimwidth($a['last_error'], 0, 70, '…')) ?></div>
@@ -95,6 +103,8 @@ function render_agency_row(array $a): string {
   <td class="nowrap">
     <?php if ($a['follow_up_at'] && $a['status'] === 'sent'): ?>
       <span class="<?= !empty($a['is_overdue']) ? 'follow-up-due' : 'muted' ?>"><?= !empty($a['is_overdue']) ? 'Due ' : '' ?><?= agency_date($a['follow_up_at']) ?></span>
+    <?php elseif ($a['status'] === 'replied' && $a['replied_at']): ?>
+      <span class="muted">Replied <?= agency_date($a['replied_at']) ?></span>
     <?php else: ?><span class="muted">—</span><?php endif; ?>
   </td>
 </tr>

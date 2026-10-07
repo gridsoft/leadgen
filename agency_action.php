@@ -8,6 +8,7 @@ require_once __DIR__ . '/includes/db.php';
 require_once __DIR__ . '/includes/AgencyStore.php';
 require_once __DIR__ . '/includes/EmailHealth.php';
 require_once __DIR__ . '/includes/MailSender.php';
+require_once __DIR__ . '/includes/AgencyViews.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Location: agency_outreach.php');
@@ -54,6 +55,10 @@ switch ($action) {
         AgencyStore::markNotInterested($pdo, $id);
         $back['done'] = 'not_interested';
         break;
+    case 'ignore':
+        AgencyStore::markIgnored($pdo, $id);
+        $back['done'] = 'ignored';
+        break;
     case 'reset_outreach':
         AgencyStore::resetOutreach($pdo, $id);
         $back['done'] = 'outreach_reset';
@@ -80,6 +85,9 @@ switch ($action) {
         };
         if (!$agency || !$analysisId) {
             $fail('missing', 'Agency or analysis not found. Reload the page.');
+        }
+        if ($agency['status'] === 'ignored') {
+            $fail('ignored', 'This agency is marked Ignored, so it is never emailed. Click Undo under Outreach first if you do want to email it.');
         }
         if (!has_smtp_config()) {
             $fail('not_configured', "Sending isn't set up: add the smtp_* settings to config.local.php.");
@@ -150,6 +158,8 @@ if (!empty($_POST['ajax'])) {
         'status' => $agency['status'] ?? null,
         'sent_at' => isset($agency['sent_at']) ? date('M j, Y', strtotime($agency['sent_at'])) : null,
         'follow_up_at' => isset($agency['follow_up_at']) ? date('M j, Y', strtotime($agency['follow_up_at'])) : null,
+        // For agency_outreach.php's list, which swaps the row in place (e.g. "Got reply").
+        'row_html' => $agency ? render_agency_row(AgencyStore::listAgencies($pdo, ['id' => $id], 'created', 'desc')[0]) : null,
     ]);
     exit;
 }

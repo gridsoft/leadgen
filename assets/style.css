@@ -958,7 +958,7 @@ tbody tr.row-ignored td:first-child { box-shadow: inset 3px 0 0 #4a514c; }
 .status-analyzed::before { background: #60a5fa; }
 .status-sent::before { background: var(--orange); }
 .status-replied::before { background: var(--green); }
-.status-not_interested { color: var(--text-muted); }
+.status-not_interested, .status-ignored { color: var(--text-muted); }
 .status-fetch_failed, .status-ai_failed { color: var(--danger); }
 .status-fetch_failed::before, .status-ai_failed::before { background: var(--danger); }
 

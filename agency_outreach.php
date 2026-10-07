@@ -47,6 +47,7 @@ $statusGroups = [
     'sent' => ['sent'],
     'replied' => ['replied'],
     'not_interested' => ['not_interested'],
+    'ignored' => ['ignored'],
     'failed' => ['fetch_failed', 'ai_failed'],
 ];
 $decisionLabels = AGENCY_DECISION_LABELS + ['none' => 'Not analyzed'];
@@ -287,6 +288,22 @@ require __DIR__ . '/includes/layout_header.php';
   progress();
   run();
 })();
+</script>
+
+<script>
+// Row buttons ("Got reply", "Ignore", "Undo"): run the action and swap in the re-rendered row.
+document.addEventListener('click', function(e) {
+  const btn = e.target.closest('.btn-row-action');
+  if (!btn) return;
+  btn.disabled = true;
+  fetch('agency_action.php', {method: 'POST', body: new URLSearchParams({id: btn.dataset.id, action: btn.dataset.action, ajax: '1'})})
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      const row = document.getElementById('agency-' + btn.dataset.id);
+      if (data.ok && data.row_html && row) { row.outerHTML = data.row_html; } else { btn.disabled = false; }
+    })
+    .catch(function() { btn.disabled = false; });
+});
 </script>
 
 <script src="assets/filter-bar.js"></script>

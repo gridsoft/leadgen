@@ -122,6 +122,7 @@ $flash = [
     'sent' => 'Marked as sent and as Reached out on the dashboard. Follow-up is due in ' . AgencyStore::FOLLOW_UP_DAYS . ' days.',
     'replied' => 'Marked as replied.',
     'not_interested' => 'Marked as not interested.',
+    'ignored' => 'Ignored: it no longer shows in Ready to send and won\'t be emailed. Undo under Outreach brings it back.',
     'outreach_reset' => 'Outreach status cleared.',
     'emailed' => 'Email sent from ' . MailSender::fromAddress() . '. Marked as sent and as Reached out on the dashboard; follow-up is due in ' . AgencyStore::FOLLOW_UP_DAYS . ' days.',
     'bounced' => 'Marked as bounced. That address is blocked for good, and the agency counts as not contacted (Not reached out on the dashboard).',
@@ -250,6 +251,9 @@ require __DIR__ . '/includes/layout_header.php';
     <div class="email-actions">
       <button type="button" class="btn-secondary" id="copySubject">Copy subject</button>
       <button type="button" class="btn-secondary" id="copyBody">Copy body</button>
+      <?php if ($agency['status'] === 'ignored'): ?>
+        <span class="muted">Ignored — not emailed. Undo under Outreach to send it.</span>
+      <?php else: ?>
       <?php if ($canSend): ?>
         <button type="button" class="btn-icon" id="sendEmail" title="Sends it now from <?= h(MailSender::fromAddress()) ?>, after you confirm">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4z"/><path d="M22 2 11 13"/></svg>
@@ -258,6 +262,7 @@ require __DIR__ . '/includes/layout_header.php';
       <?php endif; ?>
       <a class="btn btn-secondary" id="openGmail" href="#" target="_blank" rel="noopener">Open in Gmail</a>
       <a class="btn btn-secondary" id="openMail" href="#">Open in mail app</a>
+      <?php endif; ?>
     </div>
   </div>
 
@@ -344,8 +349,11 @@ require __DIR__ . '/includes/layout_header.php';
     </dl>
     <form method="post" action="agency_action.php" class="button-row wrap-row">
       <input type="hidden" name="id" value="<?= (int) $id ?>">
-      <?php if (!in_array($agency['status'], ['sent', 'replied'], true)): ?>
+      <?php if (!in_array($agency['status'], ['sent', 'replied', 'ignored'], true)): ?>
         <button type="submit" name="action" value="mark_sent" <?= $busy ? 'disabled' : '' ?>>Mark as sent</button>
+      <?php endif; ?>
+      <?php if ($agency['status'] === 'analyzed'): ?>
+        <button type="submit" name="action" value="ignore" class="btn-secondary" title="Don't email this agency: hide it from Ready to send">Ignore</button>
       <?php endif; ?>
       <?php if ($agency['status'] !== 'replied'): ?><button type="submit" name="action" value="mark_replied" class="btn-secondary" <?= $busy ? 'disabled' : '' ?>>Mark as replied</button><?php endif; ?>
       <?php if ($agency['status'] !== 'not_interested'): ?><button type="submit" name="action" value="not_interested" class="btn-secondary" <?= $busy ? 'disabled' : '' ?>>Not interested</button><?php endif; ?>
@@ -481,11 +489,18 @@ require __DIR__ . '/includes/layout_header.php';
     const s = subject.value;
     const addr = to.value.trim();
     // authuser picks which signed-in Google account the compose window opens in.
-    document.getElementById('openGmail').href = 'https://mail.google.com/mail/?view=cm&fs=1'
-      + (gmailAccount ? '&authuser=' + encodeURIComponent(gmailAccount) : '')
-      + '&to=' + encodeURIComponent(addr) + '&su=' + encodeURIComponent(s) + '&body=' + encodeURIComponent(b);
-    document.getElementById('openMail').href = 'mailto:' + encodeURIComponent(addr).replace(/%40/g, '@')
-      + '?subject=' + encodeURIComponent(s) + '&body=' + encodeURIComponent(b);
+    // (No open/send links on an ignored agency.)
+    const gmailLink = document.getElementById('openGmail');
+    const mailLink = document.getElementById('openMail');
+    if (gmailLink) {
+      gmailLink.href = 'https://mail.google.com/mail/?view=cm&fs=1'
+        + (gmailAccount ? '&authuser=' + encodeURIComponent(gmailAccount) : '')
+        + '&to=' + encodeURIComponent(addr) + '&su=' + encodeURIComponent(s) + '&body=' + encodeURIComponent(b);
+    }
+    if (mailLink) {
+      mailLink.href = 'mailto:' + encodeURIComponent(addr).replace(/%40/g, '@')
+        + '?subject=' + encodeURIComponent(s) + '&body=' + encodeURIComponent(b);
+    }
     document.getElementById('emailPreview').textContent = 'To: ' + (addr || '(none)') + '\nSubject: ' + s + '\n\n' + b;
   }
 
@@ -605,7 +620,9 @@ require __DIR__ . '/includes/layout_header.php';
   }
 
   ['openGmail', 'openMail'].forEach(function(btnId) {
-    document.getElementById(btnId).addEventListener('click', function(e) {
+    const link = document.getElementById(btnId);
+    if (!link) return;
+    link.addEventListener('click', function(e) {
       const check = document.getElementById('toCheck');
       const bad = check && ['invalid', 'bounced', 'disposable'].includes(check.dataset.status);
       if (bad && to.value.trim() === <?= json_encode($toEmail ?? '') ?> &&

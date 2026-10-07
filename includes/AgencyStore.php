@@ -14,8 +14,8 @@ require_once __DIR__ . '/EmailHealth.php';
  * the two differ (see JobQueue).
  */
 class AgencyStore {
-    public const STATUSES = ['pending', 'analyzing', 'fetch_failed', 'ai_failed', 'analyzed', 'sent', 'replied', 'not_interested'];
-    public const OUTREACH_STATUSES = ['sent', 'replied', 'not_interested'];
+    public const STATUSES = ['pending', 'analyzing', 'fetch_failed', 'ai_failed', 'analyzed', 'sent', 'replied', 'not_interested', 'ignored'];
+    public const OUTREACH_STATUSES = ['sent', 'replied', 'not_interested', 'ignored'];
     public const FOLLOW_UP_DAYS = 7;
     /** An 'analyzing' row older than this was abandoned (tab closed, PHP killed) and may be claimed again. */
     private const STALE_MINUTES = 15;
@@ -382,7 +382,7 @@ class AgencyStore {
     /** Queues a fresh run; an agency already contacted keeps its outreach status afterwards. */
     public static function queueReanalysis(PDO $pdo, int $id): void {
         $pdo->prepare(
-            "UPDATE agencies SET resume_status = IF(status IN ('sent', 'replied', 'not_interested'), status, resume_status),
+            "UPDATE agencies SET resume_status = IF(status IN ('sent', 'replied', 'not_interested', 'ignored'), status, resume_status),
                 status = 'pending', last_error = NULL
              WHERE id = :id AND status <> 'analyzing'"
         )->execute(['id' => $id]);
@@ -430,6 +430,14 @@ class AgencyStore {
     }
 
     /**
+     * "I won't email this one": an analyzed agency leaves Ready to send and the
+     * cron stock, and sending to it is refused. Undo (resetOutreach) brings it back.
+     */
+    public static function markIgnored(PDO $pdo, int $id): void {
+        $pdo->prepare("UPDATE agencies SET status = 'ignored' WHERE id = :id AND status = 'analyzed'")->execute(['id' => $id]);
+    }
+
+    /**
      * The email bounced, so the agency was never actually reached: the address is
      * blocked for good (EmailHealth), the agency goes back to "not sent" and the
      * business to "Not reached out" — and the bounce is noted on the agency.
@@ -446,7 +454,7 @@ class AgencyStore {
     public static function resetOutreach(PDO $pdo, int $id): void {
         $pdo->prepare(
             "UPDATE agencies SET status = 'analyzed', sent_at = NULL, follow_up_at = NULL, replied_at = NULL
-             WHERE id = :id AND status IN ('sent', 'replied', 'not_interested')"
+             WHERE id = :id AND status IN ('sent', 'replied', 'not_interested', 'ignored')"
         )->execute(['id' => $id]);
         // Only clears the mark this feature set; a reached-out mark the user entered by hand stays.
         $pdo->prepare(

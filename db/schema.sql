@@ -210,10 +210,10 @@ CREATE TABLE IF NOT EXISTS agencies (
     normalized_url VARCHAR(500) NOT NULL,
     domain VARCHAR(255) NOT NULL,
     agency_name VARCHAR(255),
-    status ENUM('pending', 'analyzing', 'fetch_failed', 'ai_failed', 'analyzed', 'sent', 'replied', 'not_interested')
+    status ENUM('pending', 'analyzing', 'fetch_failed', 'ai_failed', 'analyzed', 'sent', 'replied', 'not_interested', 'ignored')
         NOT NULL DEFAULT 'pending',
     -- Outreach status to restore after a re-analysis of an agency already contacted.
-    resume_status ENUM('sent', 'replied', 'not_interested') NULL,
+    resume_status ENUM('sent', 'replied', 'not_interested', 'ignored') NULL,
     last_error TEXT,
     notes TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
