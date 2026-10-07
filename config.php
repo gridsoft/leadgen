@@ -48,3 +48,7 @@ function has_smtp_config(): bool {
     $pass = $c['smtp_pass'] ?? '';
     return ($c['smtp_host'] ?? '') !== '' && ($c['smtp_user'] ?? '') !== '' && $pass !== '' && $pass !== 'YOUR_PASSWORD';
 }
+
+// Every web request needs the admin to be logged in (see includes/auth.php).
+require_once __DIR__ . '/includes/auth.php';
+auth_require_login();

@@ -162,6 +162,7 @@ html.sidebar-collapsed .sidebar-nav a,
 html.sidebar-collapsed .sidebar-toggle { justify-content: center; padding: 0; }
 html.sidebar-collapsed button.sidebar-toggle { margin: auto .55rem 0; }
 html.sidebar-collapsed .sidebar-toggle svg { transform: rotate(180deg); }
+.sidebar-account { margin-top: .2rem; }
 /* Tooltip with the page name, since the label is hidden. */
 html.sidebar-collapsed .sidebar-nav a::after {
     content: attr(data-label);
@@ -690,7 +691,7 @@ input[type=checkbox] {
 .reasons { padding-left: 1.2rem; }
 .reasons li { margin-bottom: .3rem; }
 label { display: block; margin-bottom: .3rem; font-weight: 600; font-size: .85rem; color: var(--text); }
-input[type=text], input[type=url], input[type=number] {
+input[type=text], input[type=url], input[type=number], input[type=password] {
     width: 100%;
     padding: .55rem .7rem;
     margin-bottom: 1rem;
@@ -700,7 +701,7 @@ input[type=text], input[type=url], input[type=number] {
     background: var(--card-bg);
     color: var(--text);
 }
-input[type=text]:focus, input[type=url]:focus, input[type=number]:focus {
+input[type=text]:focus, input[type=url]:focus, input[type=number]:focus, input[type=password]:focus {
     outline: none;
     border-color: var(--accent);
     box-shadow: 0 0 0 3px rgba(22, 163, 74, .14);
@@ -731,6 +732,12 @@ button:disabled:hover { background: var(--green); }
 .btn-secondary { background: var(--card-bg); color: var(--text); border: 1px solid var(--border); }
 .btn-secondary:hover { background: var(--orange-soft); border-color: var(--orange-border); color: var(--orange-dark); }
 .btn-secondary:disabled, .btn-secondary:disabled:hover { background: var(--surface-2); color: var(--text); border-color: var(--border); }
+
+/* ---------- Login ---------- */
+.login-page { flex: 1; display: flex; align-items: center; justify-content: center; padding: 1.5rem 1rem; }
+.login-card { width: 100%; max-width: 360px; margin: 0; }
+.login-card .sidebar-brand { padding: 0; }
+.login-card button { width: 100%; margin-top: .25rem; }
 
 .email-subject { font-weight: 600; margin-bottom: .5rem; }
 

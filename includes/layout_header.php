@@ -44,6 +44,12 @@ try { if (localStorage.getItem("sidebarCollapsed") === "1") document.documentEle
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 6-6 6 6 6"/></svg>
     <span class="label">Collapse</span>
   </button>
+  <nav class="sidebar-nav sidebar-account">
+    <a href="logout.php" data-label="Log out" title="Logged in as <?= htmlspecialchars((string) (app_config()['admin_user'] ?? '')) ?>">
+      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/></svg>
+      <span class="label">Log out</span>
+    </a>
+  </nav>
 </aside>
 <script>
 (function() {

@@ -2,6 +2,12 @@
 // Copy this file to config.local.php and fill in your real values.
 // config.local.php is gitignored — never commit real API keys.
 return [
+    // Login: every page requires this admin account. Create the hash with
+    //   php make_password_hash.php
+    // and paste it in single quotes (it contains $ signs). Empty = nobody can log in.
+    'admin_user' => 'admin',
+    'admin_password_hash' => '',
+
     'google_api_key' => 'YOUR_KEY_HERE', // Google Cloud key with Places API (New) + PageSpeed Insights API enabled
     'foursquare_api_key' => 'YOUR_KEY_HERE', // Foursquare service key (Places API) — 10,000 free calls on Pro endpoints
     'google_search_api_key' => 'YOUR_KEY_HERE', // Google Cloud key with Custom Search API enabled (Module A: website discovery)
