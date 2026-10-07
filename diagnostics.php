@@ -11,6 +11,7 @@
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/includes/db.php';
 require_once __DIR__ . '/includes/AgencyStore.php';
+require_once __DIR__ . '/includes/Settings.php';
 
 set_time_limit(0);
 $pdo = get_db();
@@ -54,6 +55,9 @@ $settings = [
     'LiteSpeed noabort / noconntimeout' => (getenv('noabort') ?: ($_SERVER['noabort'] ?? 'not set')) . ' / ' . (getenv('noconntimeout') ?: ($_SERVER['noconntimeout'] ?? 'not set')),
     'cURL / SSL / IPv6' => $curl['version'] . ' / ' . $curl['ssl_version'] . ' / ' . (($curl['features'] & CURL_VERSION_IPV6) ? 'yes' : 'no'),
     'Server time (PHP / MySQL)' => date('Y-m-d H:i:s') . ' / ' . $pdo->query('SELECT NOW()')->fetchColumn(),
+    'IMAP (reading replies)' => function_exists('imap_open') ? 'available' : 'MISSING — replies and bounces can\'t be read',
+    'Mailbox last checked' => (($t = (int) Settings::get($pdo, 'mailbox_synced_at', '0')) ? date('Y-m-d H:i', $t) : 'never')
+        . ((($err = Settings::get($pdo, 'mailbox_last_error')) !== '') ? ' — last error: ' . $err : ''),
 ];
 
 $ai = AiClientFactory::describeConfig();

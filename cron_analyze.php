@@ -12,6 +12,7 @@
  *
  *   php cron_analyze.php [--pool=40] [--max=5] [--minutes=10]
  *
+ * Each run first checks the mailbox for replies and bounces (includes/MailboxSync.php).
  * Analyzing by hand in the browser keeps working alongside this.
  */
 
@@ -24,6 +25,8 @@ require_once __DIR__ . '/includes/db.php';
 require_once __DIR__ . '/includes/AgencyStore.php';
 require_once __DIR__ . '/includes/ForAnalysis.php';
 require_once __DIR__ . '/includes/Settings.php';
+require_once __DIR__ . '/includes/MailboxSync.php';
+require_once __DIR__ . '/includes/OutreachInbox.php';
 
 set_time_limit(0);
 $opts = getopt('', ['pool:', 'max:', 'minutes:']);
@@ -42,12 +45,24 @@ if (!$lock || !flock($lock, LOCK_EX | LOCK_NB)) {
     exit(0);
 }
 
+$pdo = get_db();
+
+// First, read replies and bounces from the mailbox (independent of the AI quota).
+if (MailboxSync::available() && OutreachInbox::ready($pdo)) {
+    try {
+        $mail = MailboxSync::run($pdo);
+        out("Mailbox: {$mail['replies']} new repl" . ($mail['replies'] === 1 ? 'y' : 'ies') . ", {$mail['auto_replies']} auto-repl"
+            . ($mail['auto_replies'] === 1 ? 'y' : 'ies') . ", {$mail['bounces']} bounce" . ($mail['bounces'] === 1 ? '' : 's') . '.');
+    } catch (Throwable $e) {
+        out('Mailbox check failed: ' . $e->getMessage());
+    }
+}
+
 if (!has_ai_api_key()) {
     out("No AI API key configured ('ai_api_key' in config.local.php).");
     exit(1);
 }
 
-$pdo = get_db();
 $resetAt = (int) Settings::get($pdo, 'ai_quota_reset_at', '0');
 if ($resetAt > time()) {
     out('Free daily AI quota is used up; waiting until ' . date('Y-m-d H:i', $resetAt) . '.');

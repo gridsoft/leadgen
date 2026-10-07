@@ -58,6 +58,13 @@ try { if (localStorage.getItem("sidebarCollapsed") === "1") document.documentEle
     if ($activeNav === 'agencies' && $showsExactly('agency_outreach.php', $sentFilters, ['decision', 'status', 'follow_up', 'platform', 'email'])) {
         $activeNav = 'sent';
     }
+    // "Replies" (replies.php) shows how many real replies are still unread.
+    require_once __DIR__ . '/OutreachInbox.php';
+    try {
+        $unreadReplies = function_exists('get_db') ? OutreachInbox::unreadCount(get_db()) : 0;
+    } catch (Throwable $e) {
+        $unreadReplies = 0;
+    }
 
     // [activeNav key, href, label, SVG path data (24×24, stroked), optional sub-items of the same shape]
     $navItems = [
@@ -72,6 +79,7 @@ try { if (localStorage.getItem("sidebarCollapsed") === "1") document.documentEle
             ["for_analysis", ForAnalysis::dashboardUrl(), "For analysis", "<path d=\"M3 5h18l-7 8v6l-4 2v-8z\"/>"],
             ["ready_to_send", $readyToSendHref, "Ready to send", "<path d=\"m22 2-7 20-4-9-9-4z\"/><path d=\"M22 2 11 13\"/>"],
             ["sent", $sentHref, "Sent", "<path d=\"M20 6 9 17l-5-5\"/>"],
+            ["replies", "replies.php", "Replies", "<path d=\"M9 14 4 9l5-5\"/><path d=\"M4 9h10.5a5.5 5.5 0 0 1 0 11H11\"/>", $unreadReplies],
         ]],
     ];
     foreach ($navItems as $item):
@@ -80,10 +88,13 @@ try { if (localStorage.getItem("sidebarCollapsed") === "1") document.documentEle
       <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><?= $icon ?></svg>
       <span class="label"><?= htmlspecialchars($label) ?></span>
     </a>
-      <?php foreach ($item[4] ?? [] as [$subKey, $subHref, $subLabel, $subIcon]): ?>
-    <a href="<?= htmlspecialchars($subHref) ?>" class="sidebar-sub<?= $activeNav === $subKey ? " active" : "" ?>" data-label="<?= htmlspecialchars($subLabel) ?>"<?= $activeNav === $subKey ? " aria-current=\"page\"" : "" ?>>
+      <?php foreach ($item[4] ?? [] as $sub):
+        [$subKey, $subHref, $subLabel, $subIcon] = $sub;
+        $subBadge = (int) ($sub[4] ?? 0); ?>
+    <a href="<?= htmlspecialchars($subHref) ?>" class="sidebar-sub<?= $activeNav === $subKey ? " active" : "" ?>" data-label="<?= htmlspecialchars($subLabel) ?><?= $subBadge ? " ($subBadge new)" : "" ?>"<?= $activeNav === $subKey ? " aria-current=\"page\"" : "" ?>>
       <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><?= $subIcon ?></svg>
       <span class="label"><?= htmlspecialchars($subLabel) ?></span>
+      <?php if ($subBadge): ?><span class="nav-badge" aria-label="<?= $subBadge ?> unread"><?= $subBadge ?></span><?php endif; ?>
     </a>
       <?php endforeach; ?>
     <?php endforeach; ?>

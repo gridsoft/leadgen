@@ -422,8 +422,10 @@ class AgencyStore {
         self::markProspectsReachedOut($pdo, $id);
     }
 
-    public static function markReplied(PDO $pdo, int $id): void {
-        $pdo->prepare("UPDATE agencies SET status = 'replied', replied_at = NOW() WHERE id = :id")->execute(['id' => $id]);
+    /** $at: when they replied (a Unix time, e.g. from the reply in the mailbox); default now. */
+    public static function markReplied(PDO $pdo, int $id, ?int $at = null): void {
+        $pdo->prepare("UPDATE agencies SET status = 'replied', replied_at = IF(:at IS NULL, NOW(), FROM_UNIXTIME(:at2)) WHERE id = :id")
+            ->execute(['id' => $id, 'at' => $at, 'at2' => $at]);
         self::markProspectsReachedOut($pdo, $id); // a reply means they were contacted
     }
 

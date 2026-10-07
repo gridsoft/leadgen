@@ -1212,3 +1212,41 @@ a.kpi-hero:hover { border-color: var(--green); }
 @media (max-width: 640px) {
     .stage-row { grid-template-columns: 1fr; gap: .35rem; }
 }
+
+/* ---------- Replies (replies.php) and the agency conversation ---------- */
+.inline-form { display: flex; gap: .6rem; margin: 0; }
+.tabs { display: flex; flex-wrap: wrap; gap: .35rem; margin: 0 0 1rem; }
+.tabs a {
+    padding: .4rem .85rem; border-radius: 999px; font-size: .84rem; font-weight: 600;
+    color: var(--text-muted); text-decoration: none; border: 1px solid var(--border); background: var(--card-bg);
+}
+.tabs a:hover { color: var(--text); background: var(--hover); }
+.tabs a.active { color: var(--green-dark); border-color: var(--green-border); background: var(--green-soft); }
+.tab-count { font-weight: 400; color: var(--text-faint); margin-left: .2rem; }
+.tabs a.active .tab-count { color: inherit; }
+.empty-state { padding: 2rem 1.5rem; margin: 0; color: var(--text-muted); text-align: center; }
+.replies-table tbody tr { cursor: pointer; }
+.replies-table tbody tr.row-unread td { font-weight: 600; }
+.replies-table tbody tr.row-unread td:first-child { box-shadow: inset 3px 0 0 var(--green); }
+.reply-cell .badge { margin-right: .35rem; }
+.reply-snippet { color: var(--text-muted); font-weight: 400; font-size: .82rem; margin-top: .2rem; max-width: 60ch; }
+.badge-new { background: var(--green-soft); color: var(--green-dark); box-shadow: inset 0 0 0 1px var(--green-border); }
+/* Unread count on a sidebar item (Replies). */
+.nav-badge {
+    margin-left: auto; min-width: 1.35rem; padding: .05rem .4rem; border-radius: 999px;
+    background: var(--green); color: #fff; font-size: .72rem; font-weight: 700; text-align: center;
+}
+html.sidebar-collapsed .nav-badge { position: absolute; top: .15rem; right: .2rem; margin: 0; min-width: 1.1rem; font-size: .65rem; }
+
+.conversation { display: flex; flex-direction: column; gap: .9rem; }
+.msg { border: 1px solid var(--border); border-radius: 10px; padding: .85rem 1rem; background: var(--bg); }
+.msg-in { border-color: var(--green-border); }
+.msg-in.msg-auto_reply, .msg-in.msg-bounce { border-color: var(--border); }
+.msg-head { display: flex; flex-wrap: wrap; gap: .35rem .75rem; align-items: baseline; font-size: .82rem; color: var(--text-muted); margin-bottom: .5rem; }
+.msg-head strong { color: var(--text); font-size: .88rem; }
+.msg-head .msg-date { margin-left: auto; }
+.msg-subject { font-weight: 600; font-size: .9rem; margin-bottom: .45rem; }
+.msg-body { white-space: pre-wrap; overflow-wrap: anywhere; font-size: .88rem; line-height: 1.5; margin: 0; font-family: inherit; }
+.msg details { margin-top: .6rem; }
+.msg details summary { cursor: pointer; font-size: .8rem; color: var(--text-faint); }
+.msg details .msg-body { color: var(--text-muted); margin-top: .5rem; }

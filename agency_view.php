@@ -6,6 +6,8 @@ require_once __DIR__ . '/includes/AgencyViews.php';
 require_once __DIR__ . '/includes/Settings.php';
 require_once __DIR__ . '/includes/EmailHealth.php';
 require_once __DIR__ . '/includes/MailSender.php';
+require_once __DIR__ . '/includes/MailboxSync.php';
+require_once __DIR__ . '/includes/OutreachInbox.php';
 
 $pdo = get_db();
 $id = (int) ($_GET['id'] ?? 0);
@@ -129,6 +131,11 @@ $flash = [
     'notes' => 'Notes saved.',
 ][$_GET['done'] ?? ''] ?? null;
 
+// Emails sent from the app and what came back (MailboxSync). Loaded before marking
+// them read, so this visit still shows which replies are new.
+$conversation = OutreachInbox::conversation($pdo, $id);
+OutreachInbox::markRead($pdo, $id);
+
 $pageTitle = $agency['agency_name'] ?: $agency['domain'];
 $activeNav = 'agencies';
 $topbarActions = '<a class="btn btn-secondary" href="agency_outreach.php">&larr; All agencies</a>';
@@ -160,6 +167,35 @@ require __DIR__ . '/includes/layout_header.php';
       title="Scrape the site and ask the AI again. The current result stays in History.">Re-analyze</button>
   </form>
 </div>
+
+<?php if ($conversation): ?>
+<div class="card" id="conversation">
+  <h2>Conversation</h2>
+  <div class="conversation">
+    <?php foreach ($conversation as $m): ?>
+      <?php if ($m['dir'] === 'out'): ?>
+      <div class="msg msg-out">
+        <div class="msg-head"><strong>You</strong> to <?= h($m['to_email']) ?><span class="msg-date"><?= h(agency_date($m['at'], 'M j, Y H:i')) ?></span></div>
+        <div class="msg-subject"><?= h($m['subject']) ?></div>
+        <details><summary>Show the email you sent</summary><pre class="msg-body"><?= h(EmailDraft::toPlain((string) $m['body'])) ?></pre></details>
+      </div>
+      <?php else: [$newText, $quoted] = MailboxSync::splitQuoted((string) $m['body']); ?>
+      <div class="msg msg-in msg-<?= h($m['kind']) ?>">
+        <div class="msg-head">
+          <strong><?= h($m['from_name'] ?: $m['from_email']) ?></strong><?php if ($m['from_name']): ?> <?= h($m['from_email']) ?><?php endif; ?>
+          <?php if ($m['read_at'] === null && $m['kind'] === 'reply'): ?><span class="badge badge-new">New</span><?php endif; ?>
+          <?php if ($m['kind'] !== 'reply'): ?><span class="badge badge-neutral"><?= $m['kind'] === 'bounce' ? 'Bounce' : 'Auto-reply' ?></span><?php endif; ?>
+          <span class="msg-date"><?= h(agency_date($m['at'], 'M j, Y H:i')) ?></span>
+        </div>
+        <div class="msg-subject"><?= h($m['subject'] ?: '(no subject)') ?></div>
+        <pre class="msg-body"><?= h($newText !== '' ? $newText : '(empty)') ?></pre>
+        <?php if ($quoted !== ''): ?><details><summary>Show quoted text</summary><pre class="msg-body"><?= h($quoted) ?></pre></details><?php endif; ?>
+      </div>
+      <?php endif; ?>
+    <?php endforeach; ?>
+  </div>
+</div>
+<?php endif; ?>
 
 <?php if ($busy): ?>
 <div class="card analyzing-card" id="busyCard">

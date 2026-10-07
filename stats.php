@@ -2,6 +2,7 @@
 require_once __DIR__ . '/includes/db.php';
 require_once __DIR__ . '/includes/Stats.php';
 require_once __DIR__ . '/includes/Settings.php';
+require_once __DIR__ . '/includes/OutreachInbox.php';
 
 $pdo = get_db();
 $rows = Stats::byCategory($pdo);
@@ -13,6 +14,8 @@ $sources = Stats::sources($pdo);
 $cronLast = json_decode(Settings::get($pdo, 'cron_analyze_last'), true);
 $quotaResetAt = (int) Settings::get($pdo, 'ai_quota_reset_at', '0');
 $sentToday = end($daily)['sent'];
+$delivery = OutreachInbox::delivery($pdo);
+$inbox = OutreachInbox::counts($pdo);
 
 $h = fn($v) => htmlspecialchars((string) $v);
 $num = fn(int $n) => number_format($n);
@@ -164,6 +167,17 @@ require __DIR__ . '/includes/layout_header.php';
         <div class="hbar-track"><span class="hbar" style="width: <?= round($n / $sMax * 100, 1) ?>%"></span><span class="hbar-value"><?= $num($n) ?></span></div>
       </div>
     <?php endforeach; ?>
+  </section>
+
+  <section class="card">
+    <h2>Delivery</h2>
+    <p class="hint">Emails sent with the app's Send email button. Delivered = no bounce after <?= OutreachInbox::DELIVERED_AFTER_HOURS ?> hours.</p>
+    <dl class="kv">
+      <dt>Delivered</dt><dd><?= $num($delivery['delivered']) ?> <span class="muted"><?= $pct($delivery['delivered'], $delivery['sent']) ?></span></dd>
+      <dt>Waiting</dt><dd><?= $num($delivery['pending']) ?> <span class="muted">sent in the last <?= OutreachInbox::DELIVERED_AFTER_HOURS ?> h</span></dd>
+      <dt>Bounced</dt><dd><?= $num($delivery['bounced']) ?> <span class="muted"><?= $pct($delivery['bounced'], $delivery['sent']) ?></span></dd>
+      <dt>Replies</dt><dd><a href="replies.php"><?= $num($inbox['reply']) ?></a><?= $inbox['auto_reply'] ? ' <span class="muted">+ ' . $num($inbox['auto_reply']) . ' auto-repl' . ($inbox['auto_reply'] === 1 ? 'y' : 'ies') . '</span>' : '' ?></dd>
+    </dl>
   </section>
 
   <section class="card">
