@@ -40,6 +40,7 @@ $counts = AgencyStore::counts($pdo);
 // Background analysis (cron_analyze.php): its last run, and whether it's waiting for the AI quota to reset.
 $cronLast = json_decode(Settings::get($pdo, 'cron_analyze_last'), true);
 $quotaResetAt = (int) Settings::get($pdo, 'ai_quota_reset_at', '0');
+$readyToSend = AgencyStore::readyToSendCount($pdo);
 $statusGroups = [
     'pending' => ['pending', 'analyzing'],
     'analyzed' => ['analyzed'],
@@ -140,6 +141,7 @@ require __DIR__ . '/includes/layout_header.php';
 
 <?php if (is_array($cronLast)): ?>
 <p class="hint">
+  <strong><?= $readyToSend ?> ready to send</strong><?= isset($cronLast['pool']) ? ' (keeping ' . (int) $cronLast['pool'] . ' in stock)' : '' ?>.
   Background analysis: last run <?= date('M j, H:i', (int) $cronLast['at']) ?> —
   <?= (int) $cronLast['analyzed'] ?> analyzed, <?= (int) $cronLast['failed'] ?> failed (<?= htmlspecialchars((string) $cronLast['stopped']) ?>).
   <?php if ($quotaResetAt > time()): ?>Paused until <?= date('M j, H:i', $quotaResetAt) ?>, when the free AI quota resets.<?php endif; ?>

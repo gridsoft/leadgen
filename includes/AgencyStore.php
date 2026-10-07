@@ -208,6 +208,14 @@ class AgencyStore {
         ];
     }
 
+    /** Agencies ready to email: analyzed, not contacted yet, latest verdict SEND with an address to send to. */
+    public static function readyToSendCount(PDO $pdo): int {
+        return (int) $pdo->query(
+            'SELECT COUNT(*) FROM agencies a ' . self::LATEST_JOIN
+            . " WHERE a.status = 'analyzed' AND an.decision = 'SEND' AND an.to_email IS NOT NULL AND an.to_email != ''"
+        )->fetchColumn();
+    }
+
     /** "WordPress 7.0.6" → "WordPress"; no analysis or no platform → "unknown". */
     private const PLATFORM_FAMILY_SQL = "SUBSTRING_INDEX(COALESCE(NULLIF(an.platform, ''), 'unknown'), ' ', 1)";
 

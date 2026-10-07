@@ -1,13 +1,16 @@
 <?php
 /**
- * Background agency analysis, run by a cron job on the host. Each run works
- * through agencies already waiting (queued, or abandoned mid-run), then the
- * For analysis list (includes/ForAnalysis.php): creates each agency and
- * analyzes it. A run stops after --max agencies or --minutes, or when every
- * AI model's free daily quota is used up; later runs then do nothing until
- * the quota resets (Google resets it at midnight Pacific time).
+ * Background agency analysis, run by a cron job on the host. Keeps a stock
+ * of --pool agencies ready to email (AgencyStore::readyToSendCount) by
+ * analyzing the next ones from the For analysis list (includes/ForAnalysis.php)
+ * whenever the stock is short. Agencies already waiting (queued by hand, or
+ * abandoned mid-run) are always finished first, whatever the stock.
  *
- *   php cron_analyze.php [--max=5] [--minutes=10]
+ * A run stops after --max agencies or --minutes, or when every AI model's
+ * free daily quota is used up; later runs then do nothing until the quota
+ * resets (Google resets it at midnight Pacific time).
+ *
+ *   php cron_analyze.php [--pool=40] [--max=5] [--minutes=10]
  *
  * Analyzing by hand in the browser keeps working alongside this.
  */
@@ -23,7 +26,8 @@ require_once __DIR__ . '/includes/ForAnalysis.php';
 require_once __DIR__ . '/includes/Settings.php';
 
 set_time_limit(0);
-$opts = getopt('', ['max:', 'minutes:']);
+$opts = getopt('', ['pool:', 'max:', 'minutes:']);
+$pool = max(0, (int) ($opts['pool'] ?? 40));
 $max = max(1, (int) ($opts['max'] ?? 5));
 $deadline = time() + 60 * max(1, (int) ($opts['minutes'] ?? 10));
 
@@ -50,12 +54,18 @@ if ($resetAt > time()) {
     exit(0);
 }
 
-/** Next agency to analyze: one already waiting, else a new one from the For analysis list. Null when there's none. */
-function next_agency(PDO $pdo, array &$skipAgencies, array &$skipProspects): ?int {
+/**
+ * Next agency to analyze: one already waiting, else (when $topUp) a new one
+ * from the For analysis list. Null when there's none.
+ */
+function next_agency(PDO $pdo, bool $topUp, array &$skipAgencies, array &$skipProspects): ?int {
     foreach (AgencyStore::pendingIds($pdo) as $id) {
         if (!in_array($id, $skipAgencies, true)) {
             return $id;
         }
+    }
+    if (!$topUp) {
+        return null;
     }
     while ($prospectIds = ForAnalysis::nextProspectIds($pdo, 10, $skipProspects)) {
         foreach ($prospectIds as $prospectId) {
@@ -85,8 +95,10 @@ while (true) {
         $stopped = 'reached the time limit';
         break;
     }
-    $id = next_agency($pdo, $skipAgencies, $skipProspects);
+    $ready = AgencyStore::readyToSendCount($pdo);
+    $id = next_agency($pdo, $ready < $pool, $skipAgencies, $skipProspects);
     if ($id === null) {
+        $stopped = $ready >= $pool ? "$ready ready to send, target is $pool" : 'nothing left to analyze';
         break;
     }
     $skipAgencies[] = $id;
@@ -116,5 +128,6 @@ Settings::set($pdo, 'cron_analyze_last', json_encode([
     'analyzed' => $analyzed,
     'failed' => $failed,
     'stopped' => $stopped,
+    'pool' => $pool,
 ]));
 out("Done: $analyzed analyzed, $failed failed; stopped: $stopped.");
