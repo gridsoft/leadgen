@@ -165,6 +165,11 @@ require __DIR__ . '/includes/layout_header.php';
   <div class="run-head">
     <strong id="busyStage">Reading <?= h(preg_replace('#^https://#', '', $agency['normalized_url'])) ?>…</strong>
     <span class="muted" id="busyTime">0s</span>
+    <form method="post" action="agency_action.php">
+      <input type="hidden" name="id" value="<?= (int) $id ?>">
+      <button type="submit" name="action" value="stop_analysis" class="btn-secondary"
+        title="Stop waiting for this analysis. A run already going on the server may still finish and save its result.">Stop</button>
+    </form>
   </div>
   <div class="progress progress-indeterminate"><div class="progress-bar"></div></div>
   <div class="hint" id="busyNotice">Reads the homepage plus its About, Contact, Careers and Services pages, then the AI scores the agency and drafts the email. Usually under a minute; the draft appears here when it's done.</div>

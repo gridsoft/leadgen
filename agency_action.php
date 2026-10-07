@@ -136,6 +136,9 @@ switch ($action) {
         // agency_view.php sees the 'pending' status and runs the analysis itself.
         AgencyStore::queueReanalysis($pdo, $id);
         break;
+    case 'stop_analysis':
+        AgencyStore::stopAnalysis($pdo, $id);
+        break;
 }
 
 // Background calls from agency_view.php (Open in Gmail marks the email sent before the tab switches).

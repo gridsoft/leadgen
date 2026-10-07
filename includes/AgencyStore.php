@@ -233,8 +233,10 @@ class AgencyStore {
 
     /** Marks one agency 'analyzing' if it's waiting. False if another request already has it. */
     public static function claim(PDO $pdo, int $id): bool {
+        // updated_at is set explicitly: re-claiming an abandoned 'analyzing' row
+        // otherwise changes nothing, and MySQL then reports 0 affected rows.
         $stmt = $pdo->prepare(
-            "UPDATE agencies SET status = 'analyzing', last_error = NULL WHERE id = :id AND (status = 'pending'
+            "UPDATE agencies SET status = 'analyzing', last_error = NULL, updated_at = NOW() WHERE id = :id AND (status = 'pending'
                 OR (status = 'analyzing' AND updated_at < NOW() - INTERVAL " . self::STALE_MINUTES . ' MINUTE))'
         );
         $stmt->execute(['id' => $id]);
@@ -349,6 +351,20 @@ class AgencyStore {
             "UPDATE agencies SET resume_status = IF(status IN ('sent', 'replied', 'not_interested'), status, resume_status),
                 status = 'pending', last_error = NULL
              WHERE id = :id AND status <> 'analyzing'"
+        )->execute(['id' => $id]);
+    }
+
+    /**
+     * Abandons a waiting or running analysis: back to the outreach status it
+     * had, else 'analyzed' if it has a result, else 'ai_failed' so it can be
+     * re-run by hand. A request still running on the server may finish later
+     * and save its result anyway.
+     */
+    public static function stopAnalysis(PDO $pdo, int $id): void {
+        $pdo->prepare(
+            "UPDATE agencies SET status = COALESCE(resume_status, IF(analyzed_at IS NOT NULL, 'analyzed', 'ai_failed')),
+                resume_status = NULL, last_error = 'Analysis stopped before it finished.'
+             WHERE id = :id AND status IN ('pending', 'analyzing')"
         )->execute(['id' => $id]);
     }
 

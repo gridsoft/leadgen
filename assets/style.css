@@ -897,6 +897,8 @@ tbody tr.row-ignored td:first-child { box-shadow: inset 3px 0 0 #4a514c; }
 @keyframes ai-spin { to { transform: rotate(360deg); } }
 .run-head .btn-ai { margin-left: auto; font-size: .8rem; padding: .35rem .9rem; }
 .run-head { align-items: center; }
+.analyzing-card .run-head #busyTime { margin-left: auto; }
+.analyzing-card .run-head button { font-size: .8rem; padding: .35rem .9rem; }
 
 .ai-panel { margin: 0 .8rem .7rem 1.6rem; padding: .75rem .9rem; background: rgba(167, 139, 250, .06); border: 1px solid var(--purple-border); border-radius: 8px; font-size: .84rem; }
 .ai-head { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem; margin-bottom: .4rem; }
