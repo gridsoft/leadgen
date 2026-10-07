@@ -1,0 +1,3 @@
+# Saved Clutch.co pages (clutch_import.php) can exceed PHP's 2M default.
+php_value upload_max_filesize 20M
+php_value post_max_size 64M

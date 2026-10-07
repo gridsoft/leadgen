@@ -1,0 +1,21 @@
+Evaluate this agency and, if it is worth contacting, write the outreach email.
+
+WEBSITE: {URL}
+DETECTED PLATFORM: {e.g. WordPress 6.9 / Wix / unknown}
+EMAILS FOUND ON SITE: {comma-separated list, or none}
+PHONES FOUND ON SITE: {list, or none}
+
+=== HOME PAGE ===
+{text}
+
+=== ABOUT / TEAM PAGE ===
+{text}
+
+=== CONTACT PAGE ===
+{text}
+
+=== CAREERS / JOBS PAGE ===
+{text}
+
+=== SERVICES PAGE ===
+{text}

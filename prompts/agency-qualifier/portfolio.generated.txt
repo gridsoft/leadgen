@@ -1,0 +1,110 @@
+Projects listed on https://dmmbs.com/projects/ (47, fetched 2026-10-06 by refresh_portfolio.php).
+Reference only: the AI reads the hand-curated portfolio.txt, not this file.
+
+## Web Platforms & Client Sites
+- CryptoCoin News: A custom-built registration flow for CryptoCoin News — a conditional, multi-step form that branches based on each user's answers.
+  Role: Developer | Case study: https://dmmbs.com/project/cryptocoin-news/
+- Business & Professional Services Sites: Custom WordPress websites for law firms, finance companies and other professional-service clients — each with its own custom design, not a ready-made…
+  Role: Developer / Project Manager | Stack: bootstrap, jquery, mysql, php, wordpress | Case study: https://dmmbs.com/project/business-professional-services-sites/
+- Health & Wellness Sites: Custom WordPress websites for health, fitness and wellness brands — with a class or session schedule, a way to book or make…
+  Role: Developer / Project Manager | Stack: mysql, php, wordpress | Case study: https://dmmbs.com/project/health-wellness-sites/
+- Community, Niche & Small Business Sites: Community, niche-interest and small-business sites — a golf club, a photography studio, and enthusiast/community platforms built around what each one actually needed.
+  Role: Developer | Stack: mysql, php, wordpress | Case study: https://dmmbs.com/project/community-niche-small-business-sites/
+- Upflip.com — USA: A custom WordPress theme for Upflip.com, the entrepreneurship-education brand's main marketing site.
+  Role: Developer | Stack: mysql, php | Case study: https://dmmbs.com/project/upflip-com-usa/
+- Polymath — USA: A single-page brochure site for a US executive-function coaching and tutoring service — built from scratch, still live and unchanged today.
+  Role: Developer | Stack: mysql, php, wordpress | Case study: https://dmmbs.com/project/polymath-usa/
+
+## Government, Civic Tech & Intl. Orgs
+- IRI Open Finance — Ministry of Finance, Macedonia: National public transparency portal exposing state financial data, built for Macedonia's Ministry of Finance.
+  Role: Project Manager & System Architect | Stack: laravel, mysql, php | Case study: https://dmmbs.com/project/iri-open-finance-ministry-of-finance-macedonia/
+- BRO — Bureau for Public Procurement, Macedonia: Government document-archiving platform built to requirement for Macedonia's public procurement bureau.
+  Role: Project Manager, Developer & System Designer | Stack: mysql, php, wordpress | Case study: https://dmmbs.com/project/bro-bureau-for-public-procurement-macedonia/
+- United Nations Office in Macedonia: The UN country office platform for Macedonia, with a fully bespoke theme and plugin set.
+  Role: Project Manager & Developer | Stack: mysql, php, wordpress | Case study: https://dmmbs.com/project/united-nations-office-in-macedonia/
+- UNDP — Empowering Municipal Councils, Macedonia: A platform built for a UNDP programme that helps people see what their local government is doing, and gives them a way…
+  Role: Designer, Developer & QA | Stack: mysql, php, wordpress | Case study: https://dmmbs.com/project/undp-empowering-municipal-councils-macedonia/
+- IRI Anticorruption Portal: A website where people can report corruption and follow up later to see what happened to their report, with custom-built tools made…
+  Role: Project Manager, Developer & System Designer | Stack: mysql, php, woocommerce, wordpress | Case study: https://dmmbs.com/project/iri-anticorruption-portal/
+- Safe Journalists — Regional Platform: Regional media-freedom and journalist-safety platform spanning six Balkan countries.
+  Role: Project Manager, System Designer & Developer | Stack: mysql, php, wordpress | Case study: https://dmmbs.com/project/safe-journalists-regional-platform/
+- Association of Journalists of Macedonia — Membership Platform: Membership-management system for Macedonia's national journalists' association.
+  Role: Project Manager, System Designer & QA | Stack: .net, ms sql | Case study: https://dmmbs.com/project/association-of-journalists-of-macedonia-membership-platform/
+- Association of Journalists of Macedonia — Public Site: The public-facing platform for Macedonia's national journalists' association.
+  Role: Project Manager & Developer | Stack: bootstrap, jquery, wordpress | Case study: https://dmmbs.com/project/association-of-journalists-of-macedonia-public-site/
+- I4C — Innovation for Change: Mobile app and web platform allocating legal services, designed system and app architecture from scratch.
+  Role: Project Manager, System Designer & QA | Stack: apache cordova, mysql, php | Case study: https://dmmbs.com/project/i4c-innovation-for-change/
+- iVGQ — Civic Engagement Quiz Game, Kosovo: Civic-engagement quiz game across web, Android and iOS with a custom CMS for quiz management.
+  Role: System Designer, Project Manager & QA | Stack: mysql, php, wordpress | Case study: https://dmmbs.com/project/ivgq-civic-engagement-quiz-game-kosovo/
+
+## E-commerce & Marketplaces
+- Robomatis — Packaging & Strapping Tools E-Commerce, Slovenia: A multilingual WooCommerce platform for a European industrial-equipment distributor — AI-generated product content, a custom B2B quoting system, two-way Zoho CRM and…
+  Role: Developer | Stack: mysql, php, woocommerce, wordpress, wpml, openai api, zoho crm, google distance matrix api, google maps api, openstreetmap, eračuni api, paypal api, stripe api | Case study: https://dmmbs.com/project/robomatis-packaging-strapping-tools-e-commerce-slovenia/
+- ERA Paints — Automotive Touch-Up Paint E-Commerce, USA: A WooCommerce store for a US automotive touch-up paint manufacturer — a make/model/year color-finder tool backed by a custom CSV-driven matching system,…
+  Role: Developer | Stack: mysql, php, woocommerce, wordpress, paypal api, stripe api | Case study: https://dmmbs.com/project/era-paints-automotive-touch-up-paint-e-commerce-usa/
+- KupiKniga — Macedonia: A multi-vendor online bookstore with 100+ vendors and 1,000+ publishers — built to handle weekly bulk imports of 100,000+ book records without…
+  Role: Project Manager, System Designer & Developer | Stack: mysql, php, woocommerce, wordpress, kibs payment api | Case study: https://dmmbs.com/project/kupikniga-macedonia/
+- Ukelele Style — UK: A multi-vendor e-commerce platform for clothing, with a fully custom theme built to spec.
+  Role: Developer | Stack: mysql, php, woocommerce, wordpress, paypal api, stripe api | Case study: https://dmmbs.com/project/ukelele-style-uk/
+- Halifax Perennials — Canada: A full e-commerce platform for a Canadian perennial-plant retailer — with an automatic seasonal catalog and a scheduled store closure timed to…
+  Role: Developer & System Architect | Stack: mysql, php, woocommerce, wordpress, paypal api, stripe api | Case study: https://dmmbs.com/project/halifax-perennials-canada/
+- Glam Jewels — UK: A full WooCommerce platform for a UK diamond jewellery retailer — diamond-shape filtering, a build-your-own customizer, and virtual appointment booking, all wrapped…
+  Role: Developer | Stack: mysql, php, woocommerce, wordpress, paypal api, stripe api | Case study: https://dmmbs.com/project/glam-jewels-uk/
+- Wisread — UK: An e-commerce bookstore for a UK client selling digital books — a custom catalog and filters for a large, high-traffic library, a…
+  Role: Developer & System Designer | Stack: mysql, php, wordpress, paypal api, stripe api | Case study: https://dmmbs.com/project/wisread-uk/
+- Trimeks — Macedonia: An e-commerce platform for TRIMEKS, a Macedonian nutritional-supplements distributor — wishlist, comparison and discount features on a bilingual storefront, still live today…
+  Role: Project Manager & Developer | Stack: mysql, php, woocommerce, wordpress, kibs payment api | Case study: https://dmmbs.com/project/trimeks-macedonia/
+- Desert Lens — USA: A custom booking platform for a photography business — checks multiple photographers' Google Calendars for free slots, and prices each booking by…
+  Role: Developer & System Architect | Stack: mysql, php, wordpress, google calendar api, google distance matrix api, paypal api, stripe api | Case study: https://dmmbs.com/project/desert-lens-usa/
+- KupiMoment — Macedonia: A WooCommerce gift and flower shop for a Macedonian client, with a scheduled-delivery feature letting customers book a specific date and time…
+  Role: Developer | Stack: mysql, php, woocommerce, wordpress, paypal api, stripe api | Case study: https://dmmbs.com/project/kupimoment-macedonia/
+- TBM Group — EU: A WooCommerce platform for a European client built for booking and selling tickets to worldwide events, with auto-generated barcoded tickets delivered via…
+  Role: Developer / Project Manager | Stack: mysql, php, woocommerce, wordpress, paypal api, stripe api | Case study: https://dmmbs.com/project/tbm-group-eu/
+- Artmasters — Belgium: WooCommerce build, optimisation and remediation for a Belgian client.
+  Role: Developer / Project Manager | Stack: mysql, php, woocommerce, wordpress, paypal api, stripe api | Case study: https://dmmbs.com/project/artmasters-belgium/
+
+## E-learning & LMS
+- Upflip Academy — USA: A complete e-learning and community platform for Upflip, serving 29,390 registered users — the longest-running engagement in this portfolio, built from architecture…
+  Role: System Architect & Developer | Stack: bootstrap, jquery, mysql, php, openai api, vimeo api, stripe api, websocket real-time chat | Case study: https://dmmbs.com/project/upflip-academy-usa/
+- Simba School Academy — USA: A learning-management system built on LearnDash, with an integrated inventory and orders module.
+  Role: Developer | Stack: learndash, mysql, php, vimeo api, wordpress | Case study: https://dmmbs.com/project/simba-school-academy-usa/
+- Expert Selling Machine — Canada: A learning-management system built on LearnDash, heavily customized on top of its existing modules and the course-creation/delivery workflow.
+  Role: Developer | Stack: learndash, mysql, php, wordpress, stripe api, paypal api | Case study: https://dmmbs.com/project/expert-selling-machine-canada/
+- The Super Model Project — USA: An e-learning platform with integrated e-commerce for course sales.
+  Role: Developer | Stack: mysql, php, woocommerce, wordpress | Case study: https://dmmbs.com/project/the-super-model-project-usa/
+- Divitiam — USA: Customisation and remediation of an existing e-learning platform with e-commerce.
+  Role: Developer | Stack: mysql, php, wordpress | Case study: https://dmmbs.com/project/divitiam-usa/
+
+## AI-Driven Products
+- AI Product Content & Compliance Suite: A set of AI modules that fire whenever a new product is added — writing long and short descriptions, translating them into…
+  Role: AI Systems Developer | Stack: llm, python, woocommerce, wordpress, wpml, openai api | Case study: https://dmmbs.com/project/ai-product-content-compliance-suite/
+- Telegram AI Reminder Assistant: A reminder app that runs entirely inside Telegram — smart, natural-language scheduling, and the ability to ask the bot directly about anything…
+  Role: Developer | Stack: llm, python, telegram bot api, telegram bot api, google ai api | Case study: https://dmmbs.com/project/telegram-ai-reminder-assistant/
+- AI Quote & Semantic Search Agent: An AI agent that handles Robomatis quote requests end to end — semantic product search via Qdrant, one PostgreSQL source of truth…
+  Role: AI Systems Developer | Stack: llm, postgresql, python, qdrant, woocommerce, openai api, zoho crm, eračuni api | Case study: https://dmmbs.com/project/ai-quote-semantic-search-agent-slovenia/
+- Retrieval-Augmented Generation (RAG) Knowledge System — Regulated Organization: A RAG system that answers staff questions from a regulated organization's own internal documents — not general AI knowledge — with built-in…
+  Role: Product Owner / Technical Lead | Stack: llm, python, rag, local llm | Case study: https://dmmbs.com/project/ai-knowledge-assistant-regulated-organization/
+
+## Enterprise & Business Systems
+- Financial Analytics & Invoice Automation Platform: A companion analytics and automation platform built on top of a client's existing HELIX finance system — a Power BI-style dynamic dashboard,…
+  Role: System Designer & Developer | Stack: mysql, php | Case study: https://dmmbs.com/project/financial-analytics-invoice-automation-platform/
+- Multi-Country Pallet Logistics & Route Optimization Algorithm: A route-optimization algorithm that bin-packs pallet orders into full truckloads, clusters destinations into geographically coherent routes, and respects fixed border-crossing constraints —…
+  Role: Algorithm Designer & Developer | Stack: mysql, php | Case study: https://dmmbs.com/project/multi-country-pallet-logistics-route-optimization-algorithm/
+- OptiB2B — Central Procurement & Supplier Platform, Slovenia: A central multi-site procurement and supplier platform for Robomatis — five purchase-order types, delivery-aware shipment optimization, forced action on critical stock, dropshipping…
+  Role: System Architect & Developer | Stack: mysql, php, rest api, wordpress, zoho, zoho crm, zoho desk, zoho fsm, eračuni api | Case study: https://dmmbs.com/project/optib2b-b2b-ordering-logistics-portal-slovenia/
+- Customer Communication Management Platform: A Customer Communication Management and Workflow Orchestration platform customised for a multinational professional-services network, delivered on Angular, .NET and Azure.
+  Role: Senior Project Manager & Scrum Master | Stack: .net, angular, azure | Case study: https://dmmbs.com/project/customer-communication-management-platform/
+- GTLS — Transport & Logistics Software: Multi-module enterprise platform for a transport and logistics operator — fleet, driver and compliance tracking, trip and fuel management, client and broker…
+  Role: System Designer & Developer | Stack: bootstrap, jquery, mysql, php | Case study: https://dmmbs.com/project/gtls-transport-logistics-software/
+- Contract & Revenue Management Solution: Enterprise platform with CRM and bank-guarantee modules, architected and built from scratch.
+  Role: System Designer & Developer | Stack: bootstrap, jquery, mysql, php | Case study: https://dmmbs.com/project/contract-revenue-management-solution/
+- Warehouse Management Software: A warehouse-management platform covering the end-to-end flow from receiving and stock management through order processing, picking, packing and shipping, with integrated reporting…
+  Role: System Designer & Developer | Stack: bootstrap, jquery, mysql, php | Case study: https://dmmbs.com/project/warehouse-management-software/
+- Rizerapp — Canada: A fully automated fee-calculation app for a Canadian accounting client, replacing an entirely manual email/Excel process with an online flow that generates…
+  Role: System Designer & Developer | Stack: bootstrap, jquery, mysql, php, paypal api | Case study: https://dmmbs.com/project/rizerapp-canada/
+- Medical Facility Management, Macedonia: A day-to-day operations system built around one job: keep a complete, organized record for every patient — history, imaging, exam results and…
+  Role: System Designer & Developer | Stack: bootstrap, jquery, mysql, php | Case study: https://dmmbs.com/project/medical-facility-management-macedonia/
+
+## Gaming
+- Next Spin Slots — Australia: Facebook and iOS slots titles comprising 33 individual mini-games, taken from roadmap through to public launch.
+  Role: Product Owner & Project Manager | Stack: facebook, ios | Case study: https://dmmbs.com/project/next-spin-slots-australia/

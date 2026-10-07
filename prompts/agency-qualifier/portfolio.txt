@@ -1,0 +1,63 @@
+Format: Name (location) | Slobodan's role | what it is | stack.
+Cite only the facts written here. Prefer projects where his role includes Developer, Architect or System Designer. For projects where he was only Project Manager, Product Owner or QA, say he "led" or "managed" the project, never that he "built" it.
+
+## Web platforms & client sites
+- CryptoCoin News | Developer | custom conditional, multi-step registration form that branches based on each user's answers.
+- Business & professional services sites (7 clients, including McDougall Kelly & Martinis, Silicon Valley Change, LeaseExpress, Quick Home Loans) | Developer / Project Manager | custom WordPress websites for law firms, finance companies and other professional-service clients, each with its own custom design | PHP, WordPress, MySQL, Bootstrap, jQuery.
+- Health & wellness sites (5 clients: MI-Clinic, Yogasmith, Strivefit, Body by Gino, Meditate Dude) | Developer / Project Manager | custom WordPress websites for health, fitness and wellness brands, with class or session schedules and booking | PHP, WordPress, MySQL.
+- Community, niche & small business sites (7 clients, including Daniel Morcombe Foundation, Valla Mini Golf, Good Egg Studio, Tire Forum) | Developer | community, niche-interest and small-business sites, including a golf club and a photography studio | PHP, WordPress, MySQL.
+- Upflip.com (USA) | Developer | custom WordPress theme for the entrepreneurship-education brand's main marketing site | PHP, MySQL.
+- Polymath (USA) | Developer | single-page brochure site for an executive-function coaching and tutoring service, built from scratch | PHP, WordPress, MySQL.
+
+## E-commerce & marketplaces
+- Robomatis (Slovenia) | Developer | multilingual WooCommerce platform for a European industrial-equipment distributor, with AI-generated product content, a custom B2B quoting system and two-way Zoho CRM sync; 8 APIs integrated | PHP, WordPress, WooCommerce, WPML, MySQL, OpenAI.
+- ERA Paints (USA) | Developer | WooCommerce store for an automotive touch-up paint manufacturer, with a make/model/year color-finder backed by a custom CSV-driven matching system | PHP, WordPress, WooCommerce, MySQL.
+- KupiKniga (Macedonia) | Project Manager, System Designer & Developer | multi-vendor online bookstore with 100+ vendors and 1,000+ publishers, built to handle weekly bulk imports of 100,000+ book records | PHP, WordPress, WooCommerce, MySQL.
+- Ukelele Style (UK) | Developer | multi-vendor clothing e-commerce platform with a fully custom theme built to spec | PHP, WordPress, WooCommerce, MySQL.
+- Halifax Perennials (Canada) | Developer & System Architect | e-commerce platform for a perennial-plant retailer, with an automatic seasonal catalog and a scheduled store closure | PHP, WordPress, WooCommerce, MySQL.
+- Glam Jewels (UK) | Developer | WooCommerce platform for a diamond jewellery retailer, with diamond-shape filtering, a build-your-own customizer and virtual appointment booking | PHP, WordPress, WooCommerce, MySQL.
+- Wisread (UK) | Developer & System Designer | e-commerce bookstore for digital books, with a custom catalog and filters for a large, high-traffic library | PHP, WordPress, MySQL.
+- Trimeks (Macedonia) | Project Manager & Developer | bilingual e-commerce platform for a nutritional-supplements distributor, with wishlist, comparison and discount features | PHP, WordPress, WooCommerce, MySQL.
+- Desert Lens (USA) | Developer & System Architect | custom booking platform for a photography business that checks multiple photographers' Google Calendars for free slots and prices each booking | PHP, WordPress, MySQL.
+- KupiMoment (Macedonia) | Developer | WooCommerce gift and flower shop with scheduled delivery on a specific date and time | PHP, WordPress, WooCommerce, MySQL.
+- TBM Group (EU) | Developer / Project Manager | WooCommerce platform for booking and selling tickets to worldwide events, with auto-generated barcoded tickets | PHP, WordPress, WooCommerce, MySQL.
+- Artmasters (Belgium) | Developer / Project Manager | WooCommerce build, optimisation and remediation | PHP, WordPress, WooCommerce, MySQL.
+
+## E-learning & LMS
+- Upflip Academy (USA) | System Architect & Developer | complete e-learning and community platform serving 29,000+ registered users, his longest-running engagement, built as the sole engineer from architecture through production | PHP, MySQL, Bootstrap, jQuery, OpenAI.
+- Simba School Academy (USA) | Developer | LearnDash learning-management system with an integrated inventory and orders module | PHP, WordPress, LearnDash, Vimeo API, MySQL.
+- Expert Selling Machine (Canada) | Developer | LearnDash LMS heavily customized on top of its existing modules and course-creation/delivery workflow | PHP, WordPress, LearnDash, MySQL.
+- The Super Model Project (USA) | Developer | e-learning platform with integrated e-commerce for course sales | PHP, WordPress, WooCommerce, MySQL.
+- Divitiam (USA) | Developer | customisation and remediation of an existing e-learning platform with e-commerce | PHP, WordPress, MySQL.
+
+## AI-driven products
+- AI Product Content & Compliance Suite | AI Systems Developer | AI modules that run whenever a new product is added, writing long and short descriptions and translating them | Python, LLM, OpenAI, WordPress, WooCommerce, WPML.
+- AI Quote & Semantic Search Agent (for Robomatis) | AI Systems Developer | AI agent that handles quote requests end to end, with semantic product search via Qdrant and PostgreSQL as one source of truth | Python, LLM, OpenAI, Qdrant, PostgreSQL, WooCommerce.
+- RAG Knowledge System (regulated organization, not named) | Product Owner / Technical Lead | retrieval-augmented generation system that answers staff questions from the organization's own internal documents | Python, local LLM, RAG.
+- Telegram AI Reminder Assistant | Developer | reminder app that runs inside Telegram, with natural-language scheduling | Python, LLM, Google AI, Telegram Bot API.
+
+## Enterprise & business systems
+- OptiB2B (Slovenia, for Robomatis) | System Architect & Developer | central multi-site procurement and supplier platform with five purchase-order types, delivery-aware shipment optimization and dropshipping | PHP, WordPress, REST API, Zoho, MySQL.
+- Financial Analytics & Invoice Automation Platform | System Designer & Developer | analytics and automation platform built on top of a client's existing finance system, with a dynamic dashboard | PHP, MySQL.
+- Multi-Country Pallet Logistics & Route Optimization Algorithm | Algorithm Designer & Developer | algorithm that packs pallet orders into full truckloads and clusters destinations into routes, respecting border-crossing constraints | PHP, MySQL.
+- GTLS Transport & Logistics Software (BateTransport, Cvetkovski Group) | System Designer & Developer | multi-module enterprise platform for fleet, driver and compliance tracking, and trip and fuel management | PHP, MySQL, Bootstrap, jQuery.
+- Contract & Revenue Management Solution | System Designer & Developer | enterprise platform with CRM and bank-guarantee modules, built from scratch | PHP, MySQL, Bootstrap, jQuery.
+- Warehouse Management Software | System Designer & Developer | warehouse platform covering receiving, stock management, order processing, picking, packing, shipping and reporting | PHP, MySQL, Bootstrap, jQuery.
+- Rizerapp (Canada) | System Designer & Developer | automated fee-calculation app for an accounting client, replacing a manual email/Excel process | PHP, MySQL, Bootstrap, jQuery.
+- Medical Facility Management (Macedonia) | System Designer & Developer | operations system keeping a complete record for every patient, including history, imaging and exam results | PHP, MySQL, Bootstrap, jQuery.
+- Customer Communication Management Platform | Senior Project Manager & Scrum Master | communication management and workflow platform customised for a multinational professional-services network | Angular, .NET, Azure.
+
+## Government, civic tech & international organizations
+- IRI Open Finance (Ministry of Finance, Macedonia) | Project Manager & System Architect | national public transparency portal exposing state financial data | Laravel, PHP, MySQL.
+- BRO, Bureau for Public Procurement (Macedonia) | Project Manager, Developer & System Designer | government document-archiving platform | PHP, WordPress, MySQL.
+- United Nations Office in Macedonia | Project Manager & Developer | UN country office platform with a fully bespoke theme and plugin set | PHP, WordPress, MySQL.
+- UNDP Empowering Municipal Councils (Macedonia) | Designer, Developer & QA | platform that helps people see what their local government is doing | PHP, WordPress, MySQL.
+- IRI Anticorruption Portal | Project Manager, Developer & System Designer | website where people report corruption and follow up on what happened to their report | PHP, WordPress, WooCommerce, MySQL.
+- Safe Journalists | Project Manager, System Designer & Developer | regional media-freedom and journalist-safety platform spanning six Balkan countries | PHP, WordPress, MySQL.
+- Association of Journalists of Macedonia, public site | Project Manager & Developer | public platform for the national journalists' association | WordPress, Bootstrap, jQuery.
+- Association of Journalists of Macedonia, membership platform | Project Manager, System Designer & QA | membership-management system | .NET, MS SQL.
+- I4C Innovation for Change | Project Manager, System Designer & QA | mobile app and web platform allocating legal services | PHP, Apache Cordova, MySQL.
+- iVGQ Civic Engagement Quiz Game (Kosovo) | System Designer, Project Manager & QA | civic quiz game across web, Android and iOS with a custom CMS | PHP, WordPress, MySQL.
+
+## Gaming
+- Next Spin Slots (Australia) | Product Owner & Project Manager | Facebook and iOS slots titles with 33 mini-games, taken from roadmap to public launch | Facebook, iOS.

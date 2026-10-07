@@ -1,0 +1,10 @@
+{
+    "name": "leadgen/enrichment",
+    "description": "Local lead-generation tool: prospect discovery, site analysis, and enrichment pipeline.",
+    "type": "project",
+    "require": {
+        "php": ">=7.4",
+        "giggsey/libphonenumber-for-php": "^8.13",
+        "jeremykendall/php-domain-parser": "^6.1"
+    }
+}
