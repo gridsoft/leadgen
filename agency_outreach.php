@@ -57,6 +57,8 @@ $platforms = array_keys($counts['platform']);
 $searchQuery = trim((string) ($_GET['q'] ?? ''));
 $decisionFilter = multi_param('decision', array_keys($decisionLabels));
 $statusFilter = multi_param('status', array_keys($statusGroups));
+// Showing only emailed agencies (e.g. the sidebar's Sent): the date column is the sent date, not the analyzed one.
+$dateColumn = $statusFilter && !array_diff($statusFilter, ['sent', 'replied']) ? 'sent' : 'analyzed';
 // ?overdue=1 is the older "Follow-up due" link.
 $followUpFilter = ($_GET['overdue'] ?? '') === '1' ? ['due'] : multi_param('follow_up', array_keys($followUpLabels));
 $platformFilter = multi_param('platform', $platforms);
@@ -202,11 +204,11 @@ require __DIR__ . '/includes/layout_header.php';
       <th><?= sort_link('score', 'Score', $sort, $dir) ?></th>
       <th>Contact email</th>
       <th><?= sort_link('status', 'Status', $sort, $dir) ?></th>
-      <th><?= sort_link('analyzed', 'Analyzed', $sort, $dir) ?></th>
+      <th><?= $dateColumn === 'sent' ? sort_link('sent', 'Sent', $sort, $dir) : sort_link('analyzed', 'Analyzed', $sort, $dir) ?></th>
       <th><?= sort_link('follow_up', 'Follow-up', $sort, $dir) ?></th>
     </tr></thead>
     <tbody id="agencyRows">
-      <?php foreach ($agencies as $a): ?><?= render_agency_row($a) ?><?php endforeach; ?>
+      <?php foreach ($agencies as $a): ?><?= render_agency_row($a, $dateColumn) ?><?php endforeach; ?>
       <?php if (!$agencies): ?>
         <tr><td colspan="7" class="muted"><?= $counts['total'] ? 'No agencies match these filters.' : 'No agencies yet. Paste some websites above.' ?></td></tr>
       <?php endif; ?>
@@ -296,7 +298,7 @@ document.addEventListener('click', function(e) {
   const btn = e.target.closest('.btn-row-action');
   if (!btn) return;
   btn.disabled = true;
-  fetch('agency_action.php', {method: 'POST', body: new URLSearchParams({id: btn.dataset.id, action: btn.dataset.action, ajax: '1'})})
+  fetch('agency_action.php', {method: 'POST', body: new URLSearchParams({id: btn.dataset.id, action: btn.dataset.action, ajax: '1', date_column: <?= json_encode($dateColumn) ?>})})
     .then(function(r) { return r.json(); })
     .then(function(data) {
       const row = document.getElementById('agency-' + btn.dataset.id);

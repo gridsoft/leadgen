@@ -159,7 +159,7 @@ if (!empty($_POST['ajax'])) {
         'sent_at' => isset($agency['sent_at']) ? date('M j, Y', strtotime($agency['sent_at'])) : null,
         'follow_up_at' => isset($agency['follow_up_at']) ? date('M j, Y', strtotime($agency['follow_up_at'])) : null,
         // For agency_outreach.php's list, which swaps the row in place (e.g. "Got reply").
-        'row_html' => $agency ? render_agency_row(AgencyStore::listAgencies($pdo, ['id' => $id], 'created', 'desc')[0]) : null,
+        'row_html' => $agency ? render_agency_row(AgencyStore::listAgencies($pdo, ['id' => $id], 'created', 'desc')[0], ($_POST['date_column'] ?? '') === 'sent' ? 'sent' : 'analyzed') : null,
     ]);
     exit;
 }

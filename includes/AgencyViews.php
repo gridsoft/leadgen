@@ -60,8 +60,12 @@ function agency_date(?string $ts, string $format = 'M j, Y'): string {
     return $ts ? date($format, strtotime($ts)) : '';
 }
 
-/** One <tr> of the agency list. $a is a row from AgencyStore::listAgencies(). */
-function render_agency_row(array $a): string {
+/**
+ * One <tr> of the agency list. $a is a row from AgencyStore::listAgencies().
+ * $dateColumn: 'analyzed' (default) or 'sent' — which date the date column shows.
+ */
+function render_agency_row(array $a, string $dateColumn = 'analyzed'): string {
+    $date = $dateColumn === 'sent' ? $a['sent_at'] : $a['analyzed_at'];
     $name = $a['agency_name'] ?: $a['domain'];
     $classes = [];
     if (!empty($a['is_overdue'])) {
@@ -99,7 +103,7 @@ function render_agency_row(array $a): string {
       <div class="agency-error" title="<?= h($a['last_error']) ?>"><?= h(mb_strimwidth($a['last_error'], 0, 70, '…')) ?></div>
     <?php endif; ?>
   </td>
-  <td class="nowrap"><?= agency_date($a['analyzed_at']) ?: '<span class="muted">—</span>' ?></td>
+  <td class="nowrap"><?= agency_date($date) ?: '<span class="muted">—</span>' ?></td>
   <td class="nowrap">
     <?php if ($a['follow_up_at'] && $a['status'] === 'sent'): ?>
       <span class="<?= !empty($a['is_overdue']) ? 'follow-up-due' : 'muted' ?>"><?= !empty($a['is_overdue']) ? 'Due ' : '' ?><?= agency_date($a['follow_up_at']) ?></span>
