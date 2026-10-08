@@ -21,6 +21,7 @@ class AgencyScraper {
     public const TEXT_LIMIT = 6000;
     public const MIN_TEXT = 300;
     public const LOW_TEXT_WARNING = 'Very little text found, site may need JavaScript';
+    public const NO_HTTPS_WARNING = 'The site does not load over HTTPS (secure connection failed); it was read over plain HTTP';
 
     private const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36';
     private const TIMEOUT = 15;
@@ -51,6 +52,17 @@ class AgencyScraper {
         $result = ['ok' => false, 'error' => null, 'pages' => [], 'emails' => [], 'phones' => [], 'platform' => 'unknown', 'warnings' => []];
 
         $home = ($this->fetch)($url);
+        // Some sites never set up HTTPS, or it's broken (centrodev.com), or it only speaks
+        // TLS versions this server's OpenSSL can't — but they work over plain HTTP. Only an
+        // encryption failure is retried; a missing or unreachable site would just fail twice.
+        if (!$home['ok'] && $home['status'] === 0 && stripos($url, 'https://') === 0
+            && preg_match('/\b(SSL|TLS)\b/i', (string) $home['error'])) {
+            $plain = ($this->fetch)('http://' . substr($url, strlen('https://')));
+            if ($plain['ok']) {
+                $home = $plain;
+                $result['warnings'][] = self::NO_HTTPS_WARNING;
+            }
+        }
         if (!$home['ok']) {
             $result['error'] = 'Could not fetch the homepage: ' . ($home['error'] ?? ('HTTP ' . $home['status']));
             return $result;

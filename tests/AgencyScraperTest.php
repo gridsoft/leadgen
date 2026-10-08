@@ -15,6 +15,30 @@ function fake_fetcher(array $pages, array &$requested): callable {
 const SITE = 'https://www.brightlinedigital.com';
 
 return [
+    'a site whose HTTPS fails is read over plain HTTP, with a warning' => function () {
+        $requested = [];
+        $plain = fake_fetcher(['http://centrodev.com' => fixture('wp_home.html')], $requested);
+        $fetch = function (string $url) use ($plain) {
+            if (strpos($url, 'https://') === 0) {
+                return ['ok' => false, 'status' => 0, 'html' => '', 'final_url' => $url, 'error' => 'TLS connect error: error:14094410:SSL routines:ssl3_read_bytes:sslv3 alert handshake failure'];
+            }
+            return $plain($url);
+        };
+        $r = (new AgencyScraper($fetch, function () {}))->scrape('https://centrodev.com');
+        assert_true($r['ok'], 'read over HTTP');
+        assert_same('http://centrodev.com', $r['pages']['home']['url']);
+        assert_contains(AgencyScraper::NO_HTTPS_WARNING, implode(' ', $r['warnings']));
+    },
+    'other homepage failures are not retried over HTTP' => function () {
+        $requested = [];
+        $fetch = function (string $url) use (&$requested) {
+            $requested[] = $url;
+            return ['ok' => false, 'status' => 0, 'html' => '', 'final_url' => $url, 'error' => 'Could not resolve host: gone.invalid'];
+        };
+        $r = (new AgencyScraper($fetch, function () {}))->scrape('https://gone.invalid');
+        assert_same(false, $r['ok']);
+        assert_same(['https://gone.invalid'], $requested, 'one request only');
+    },
     'extracts emails from mailto links and text, dropping junk' => function () {
         $emails = AgencyScraper::extractEmails(fixture('wp_home.html'));
         assert_same(['hello@brightlinedigital.com'], $emails, 'mailto (with ?subject) and JSON-escaped address collapse to one');
