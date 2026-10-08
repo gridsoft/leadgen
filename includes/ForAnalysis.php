@@ -9,9 +9,20 @@
 final class ForAnalysis {
     /**
      * Targeted business types: the Business type typed in Find prospects, stored
-     * as typed (matched without regard to upper/lower case).
+     * as typed. Matched without regard to upper/lower case, extra spaces, or
+     * "agency" vs "agencies" (see names()).
      */
-    public const CATEGORIES = ['web development agency', 'digital marketing agency', 'seo agency'];
+    public const CATEGORIES = ['web development agency', 'digital marketing agency', 'marketing agency', 'seo agency'];
+
+    /** Every spelling that counts: each type in singular and plural ("… agency" / "… agencies"), lowercase. */
+    public static function names(): array {
+        $names = [];
+        foreach (self::CATEGORIES as $category) {
+            $names[] = $category;
+            $names[] = preg_replace('/agency$/', 'agencies', $category);
+        }
+        return array_values(array_unique($names));
+    }
 
     /** Dashboard parameter that switches index.php to this list. */
     public const PARAM = 'for_analysis';
@@ -31,11 +42,11 @@ final class ForAnalysis {
     public static function condition(): array {
         $placeholders = [];
         $params = [];
-        foreach (self::CATEGORIES as $i => $category) {
+        foreach (self::names() as $i => $name) {
             $placeholders[] = ":fa_cat$i";
-            $params["fa_cat$i"] = $category;
+            $params["fa_cat$i"] = $name;
         }
-        $sql = '(p.category IN (' . implode(', ', $placeholders) . ")
+        $sql = '(LOWER(TRIM(p.category)) IN (' . implode(', ', $placeholders) . ")
             AND p.contact_email IS NOT NULL AND p.contact_email != ''
             AND p.contacted_at IS NULL AND p.ignored_at IS NULL
             AND p.website_domain IS NOT NULL AND p.website_domain != ''
