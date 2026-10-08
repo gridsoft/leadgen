@@ -42,7 +42,8 @@ try { if (localStorage.getItem("sidebarCollapsed") === "1") document.documentEle
     };
     // "For analysis" (includes/ForAnalysis.php): dashboard prospects still to analyze.
     require_once __DIR__ . '/ForAnalysis.php';
-    if ($activeNav === 'dashboard' && $showsExactly('index.php', ForAnalysis::FILTERS, ['status', 'category', 'source', 'email', 'contacted', 'ai'])) {
+    if ($activeNav === 'dashboard' && ($_GET[ForAnalysis::PARAM] ?? '') === '1'
+        && $showsExactly('index.php', [], ['status', 'category', 'source', 'email', 'contacted', 'ai'])) {
         $activeNav = 'for_analysis';
     }
     // "Ready to send": analyzed agencies with a SEND verdict and an address, not emailed yet,

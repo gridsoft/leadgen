@@ -2,6 +2,7 @@
 require_once __DIR__ . '/includes/db.php';
 require_once __DIR__ . '/includes/ContactStatus.php';
 require_once __DIR__ . '/includes/FilterBar.php';
+require_once __DIR__ . '/includes/ForAnalysis.php';
 
 $pdo = get_db();
 
@@ -128,6 +129,13 @@ if ($aiFilter === ['analyzed']) {
     $conditions[] = AI_ANALYZED_SQL;
 } elseif ($aiFilter === ['not_analyzed']) {
     $conditions[] = 'NOT ' . AI_ANALYZED_SQL;
+}
+// For analysis (sidebar): exactly the leads the background worker picks next (includes/ForAnalysis.php).
+$forAnalysis = ($_GET[ForAnalysis::PARAM] ?? '') === '1';
+if ($forAnalysis) {
+    [$forAnalysisSql, $forAnalysisParams] = ForAnalysis::condition();
+    $conditions[] = $forAnalysisSql;
+    $params += $forAnalysisParams;
 }
 if ($searchQuery !== '') {
     $conditions[] = '(p.business_name LIKE :q1 OR p.city LIKE :q2 OR p.category LIKE :q3
@@ -283,8 +291,15 @@ $filterDefs = filter_defs_prepare($filterDefs);
   <h2>Prospects <span class="count"><?= $totalRows ?></span></h2>
 </div>
 
+<?php if ($forAnalysis): ?>
+<div class="notice">
+  <?php $queueCount = ForAnalysis::count($pdo); ?><strong>For analysis:</strong> the <?= number_format($queueCount) ?> lead<?= $queueCount === 1 ? '' : 's' ?> the background worker analyzes next, newest first —
+  <?= htmlspecialchars(implode(', ', ForAnalysis::CATEGORIES)) ?> with an email address, not contacted, and whose website has no agency yet.
+  Leads without a website, or whose site already failed, are left out. <a href="index.php">Show all leads</a>
+</div>
+<?php endif; ?>
 <?= render_filter_bar('index.php', $filterDefs, $searchQuery, 'Search name, city, phone, email, website…',
-    ['sort' => $sortKey, 'dir' => strtolower($sortDir), 'per_page' => (string) $perPage], 'build_url') ?>
+    ['sort' => $sortKey, 'dir' => strtolower($sortDir), 'per_page' => (string) $perPage] + ($forAnalysis ? [ForAnalysis::PARAM => '1'] : []), 'build_url') ?>
 <?= render_active_filters($filterDefs, $searchQuery, 'build_url') ?>
 
 <form method="post" action="analyze_selected.php" id="analyzeForm">

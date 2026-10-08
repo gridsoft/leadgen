@@ -49,7 +49,7 @@ foreach ($prospects as $prospect) {
 // where they were, not reset to page 1 with no filters.
 // The dashboard posts its whole query string (filters are multi-select arrays).
 parse_str((string) ($_POST['return_query'] ?? ''), $returnParams);
-$returnParams = array_intersect_key($returnParams, array_flip(['status', 'category', 'source', 'contacted', 'ai', 'email', 'q', 'sort', 'dir', 'page', 'per_page']));
+$returnParams = array_intersect_key($returnParams, array_flip(['for_analysis', 'status', 'category', 'source', 'contacted', 'ai', 'email', 'q', 'sort', 'dir', 'page', 'per_page']));
 
 header('Location: index.php?' . http_build_query(array_merge($returnParams, [
     'analyzed' => $analyzed,
