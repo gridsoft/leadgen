@@ -263,6 +263,23 @@ class AgencyStore {
         )->fetchAll(PDO::FETCH_COLUMN));
     }
 
+    /**
+     * Agencies whose analysis failed only because the AI was overloaded (a browser run during
+     * a Google outage, or before this was handled) go back to the queue — at most $limit, the
+     * oldest first, and only an hour after the failure. Returns how many were queued.
+     */
+    public static function requeueTemporaryFailures(PDO $pdo, int $limit): int {
+        $stmt = $pdo->prepare(
+            "UPDATE agencies SET status = 'pending', last_error = NULL
+             WHERE status = 'ai_failed' AND updated_at < NOW() - INTERVAL 1 HOUR
+               AND (last_error LIKE '%No Gemini model could answer%' OR last_error LIKE '%high demand%' OR last_error LIKE '%overloaded%')
+               AND last_error NOT LIKE '%daily AI quota%'
+             ORDER BY updated_at LIMIT " . max(1, $limit)
+        );
+        $stmt->execute();
+        return $stmt->rowCount();
+    }
+
     /** Marks one agency 'analyzing' if it's waiting. False if another request already has it. */
     public static function claim(PDO $pdo, int $id): bool {
         // updated_at is set explicitly: re-claiming an abandoned 'analyzing' row
@@ -279,8 +296,9 @@ class AgencyStore {
      * Scrapes the site, calls the AI and stores a new analysis row. The
      * agency must already be claimed. Every failure is recorded on the row —
      * this never throws for a bad site or a bad AI reply, so a batch keeps going.
-     * The one exception: with $waitForQuota, a used-up daily AI quota puts the
-     * agency back to 'pending' (nothing recorded) and throws AiQuotaExhausted.
+     * The one exception: with $waitForQuota, a used-up daily AI quota or an
+     * overloaded AI puts the agency back to 'pending' (nothing recorded) and
+     * throws AiQuotaExhausted / AiTemporarilyUnavailable.
      *
      * @return string the agency's new status
      */
@@ -314,7 +332,7 @@ class AgencyStore {
             /** @var AgencyQualifier $qualifier */
             $qualifier = $makeQualifier();
             $ai = $qualifier->analyze($agency['normalized_url'], $scrape);
-        } catch (AiQuotaExhausted $e) {
+        } catch (AiQuotaExhausted | AiTemporarilyUnavailable $e) {
             if ($waitForQuota) {
                 $pdo->prepare("UPDATE agencies SET status = 'pending' WHERE id = :id")->execute(['id' => $id]);
                 throw $e;

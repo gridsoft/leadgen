@@ -151,6 +151,16 @@ return [
             assert_contains('daily quota used up', $e->getMessage());
         }
     },
+    'every model overloaded is a temporary failure, worth retrying later' => function () {
+        $requests = [];
+        $busy = ['status' => 503, 'headers' => [], 'error' => null, 'body' => '{"error":{"message":"This model is currently experiencing high demand."}}'];
+        try {
+            gemini_client(array_fill(0, 6, $busy), $requests, $sleeps, ['gemini-3.5-flash'])->complete('S', 'U', []);
+            throw new AssertionFailed('expected an exception');
+        } catch (AiTemporarilyUnavailable $e) {
+            assert_contains('overloaded right now', $e->getMessage());
+        }
+    },
     'one model out of quota and another overloaded is a normal failure, not AiQuotaExhausted' => function () {
         $requests = [];
         $busy = ['status' => 503, 'headers' => [], 'error' => null, 'body' => '{"error":{"message":"high demand"}}'];

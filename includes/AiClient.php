@@ -30,6 +30,9 @@ class AiDailyQuotaUsed extends AiModelUnavailable {}
 /** Every configured model's daily quota is used up, so nothing will answer until it resets. */
 class AiQuotaExhausted extends AiRequestException {}
 
+/** Every model is overloaded or rate-limited for now (HTTP 503 / per-minute 429): worth trying again later. */
+class AiTemporarilyUnavailable extends AiRequestException {}
+
 final class AiClientFactory {
     /** Builds the client named by config 'ai_provider'. Throws if it isn't configured. */
     public static function fromConfig(): AiClient {
@@ -297,7 +300,8 @@ class GeminiClient implements AiClient {
         if ($allOutOfQuota) {
             throw new AiQuotaExhausted('The free daily AI quota is used up for every model. ' . implode(' | ', $failures));
         }
-        throw new AiRequestException('No Gemini model could answer. ' . implode(' | ', $failures));
+        // Only "unavailable" failures reach here (overloaded, rate-limited, out of quota): it will pass.
+        throw new AiTemporarilyUnavailable("Google's AI is overloaded right now (temporary) — try again in a few minutes. No Gemini model could answer. " . implode(' | ', $failures));
     }
 
     private function completeWithModel(string $model, string $system, string $user, array $schema): array {

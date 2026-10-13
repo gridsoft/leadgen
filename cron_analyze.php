@@ -95,6 +95,11 @@ function next_agency(PDO $pdo, bool $topUp, array &$skipAgencies, array &$skipPr
     return null;
 }
 
+// Agencies that failed earlier only because the AI was overloaded get another try (a few per run).
+if ($requeued = AgencyStore::requeueTemporaryFailures($pdo, $max)) {
+    out("Retrying $requeued agenc" . ($requeued === 1 ? 'y' : 'ies') . " that failed earlier because the AI was overloaded.");
+}
+
 $analyzed = 0;
 $failed = 0;
 $skipAgencies = [];
@@ -131,6 +136,11 @@ while (true) {
         Settings::set($pdo, 'ai_quota_reset_at', (string) $resetAt);
         out("#$id $domain: free daily AI quota used up, left in the queue.");
         $stopped = 'free daily AI quota used up until ' . date('Y-m-d H:i', $resetAt);
+        break;
+    } catch (AiTemporarilyUnavailable $e) {
+        // Google's models are overloaded: keep the agency queued and try again on the next run.
+        out("#$id $domain: Google's AI is overloaded right now, left in the queue for the next run.");
+        $stopped = "Google's AI was overloaded; trying again next run";
         break;
     }
     $status === 'analyzed' ? $analyzed++ : $failed++;
