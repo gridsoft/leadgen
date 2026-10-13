@@ -27,9 +27,13 @@ final class AutoSender {
     public const STEP = 5;
     public const MAX_LIMIT = 40;
     public const GROW_MAX_BOUNCE_RATE = 0.03;
-    /** Pause when the last 7 days bounce at this rate with at least PAUSE_MIN_BOUNCES, or 3 bounce within a day. */
+    /**
+     * Pause when the last 7 days bounce at this rate with at least PAUSE_MIN_BOUNCES, or that many
+     * bounce within a day. Only emails sent since the last Resume count: resuming means the
+     * bounces so far were seen (their addresses are blocked for good), so they can't pause it again.
+     */
     public const PAUSE_BOUNCE_RATE = 0.05;
-    public const PAUSE_MIN_BOUNCES = 2;
+    public const PAUSE_MIN_BOUNCES = 3;
     private const MIN_GAP_MINUTES = 4;
     /** Bounces arrive within minutes: read the mailbox before sending if it's older than this. */
     private const MAILBOX_FRESH_MINUTES = 15;
@@ -66,6 +70,7 @@ final class AutoSender {
     }
 
     public static function resume(PDO $pdo): void {
+        Settings::set($pdo, 'auto_send_resumed_at', (string) time());
         Settings::set($pdo, 'auto_send_paused', '');
     }
 
@@ -103,15 +108,18 @@ final class AutoSender {
         Settings::set($pdo, 'auto_send_limit_since', self::now()->format('Y-m-d'));
     }
 
-    /** Emails sent from the app over the last $days days, and how many of them bounced. */
-    public static function recentBounces(PDO $pdo, int $days): array {
+    /** Emails sent from the app over the last $days days (and not before $since, a Unix time), and how many of them bounced. */
+    public static function recentBounces(PDO $pdo, int $days, int $since = 0): array {
         $bounced = OutreachInbox::ready($pdo)
             ? "EXISTS (SELECT 1 FROM outreach_replies r WHERE r.outreach_email_id = e.id AND r.kind = 'bounce')"
             : '0';
-        $r = $pdo->query(
+        $stmt = $pdo->prepare(
             "SELECT COUNT(*) AS sent, COALESCE(SUM($bounced), 0) AS bounced FROM outreach_emails e
-             WHERE e.status = 'sent' AND e.is_test = 0 AND e.sent_at >= NOW() - INTERVAL " . (int) $days . ' DAY'
-        )->fetch();
+             WHERE e.status = 'sent' AND e.is_test = 0 AND e.sent_at >= NOW() - INTERVAL " . (int) $days . ' DAY
+               AND e.sent_at >= FROM_UNIXTIME(:since)'
+        );
+        $stmt->execute(['since' => $since]);
+        $r = $stmt->fetch();
         $sent = (int) $r['sent'];
         $n = (int) $r['bounced'];
         return ['sent' => $sent, 'bounced' => $n, 'rate' => $sent > 0 ? $n / $sent : 0.0];
@@ -195,10 +203,12 @@ final class AutoSender {
                 return 'Not sending: the mailbox could not be checked for bounces (' . $e->getMessage() . ').';
             }
         }
-        $week = self::recentBounces($pdo, 7);
-        $day = self::recentBounces($pdo, 1);
-        if (($week['bounced'] >= self::PAUSE_MIN_BOUNCES && $week['rate'] >= self::PAUSE_BOUNCE_RATE) || $day['bounced'] >= 3) {
-            $reason = sprintf('%d of %d emails bounced in the last 7 days (%.0f%%). Check the addresses before resuming.', $week['bounced'], $week['sent'], $week['rate'] * 100);
+        $resumedAt = (int) Settings::get($pdo, 'auto_send_resumed_at', '0');
+        $week = self::recentBounces($pdo, 7, $resumedAt);
+        $day = self::recentBounces($pdo, 1, $resumedAt);
+        if (($week['bounced'] >= self::PAUSE_MIN_BOUNCES && $week['rate'] >= self::PAUSE_BOUNCE_RATE) || $day['bounced'] >= self::PAUSE_MIN_BOUNCES) {
+            $reason = sprintf('%d of %d emails bounced in the last 7 days%s (%.0f%%). The bounced addresses are blocked; check the others before resuming.',
+                $week['bounced'], $week['sent'], $resumedAt > $now->getTimestamp() - 7 * 86400 ? ' since you last resumed' : '', $week['rate'] * 100);
             self::pause($pdo, $reason);
             return "Paused: $reason";
         }
