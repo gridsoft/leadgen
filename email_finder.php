@@ -35,6 +35,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // AI checks are queued here and run by ai_worker.php (Claude Code on the
     // user's own login); the page polls ai_status for results.
+    if (($action === 'ai_check' || $action === 'worker_start') && !AiChecker::available()) {
+        echo json_encode(['ok' => false, 'message' => AiChecker::UNAVAILABLE_MESSAGE, 'jobs' => []]);
+        exit;
+    }
     if ($action === 'ai_check') {
         $ids = array_filter(array_map('intval', explode(',', (string) ($_POST['ids'] ?? ''))));
         $jobs = [];
@@ -176,7 +180,10 @@ require __DIR__ . '/includes/layout_header.php';
 </div>
 <?php endif; ?>
 
-<details class="card ai-settings" id="aiSettings">
+<?php if (!AiChecker::available()): ?>
+<p class="hint"><?= htmlspecialchars(AiChecker::UNAVAILABLE_MESSAGE) ?></p>
+<?php endif; ?>
+<details class="card ai-settings" id="aiSettings"<?= AiChecker::available() ? '' : ' hidden' ?>>
   <summary>
     <span class="ai-spark" aria-hidden="true">&#10022;</span> AI check
     <span class="hint" style="margin:0">— Claude visits the site and searches the web to find an email and tell you if the lead is worth trying</span>
@@ -220,6 +227,7 @@ require __DIR__ . '/includes/layout_header.php';
 </div>
 
 <script>
+const AI_CHECK_AVAILABLE = <?= AiChecker::available() ? 'true' : 'false' ?>;
 (function() {
   const form = document.getElementById('finderForm');
   const startBtn = document.getElementById('startBtn');
@@ -451,6 +459,7 @@ require __DIR__ . '/includes/layout_header.php';
     }
     const btn = el('button', 'btn-ai', item.ai ? 'Re-check with AI' : 'Check with AI');
     btn.type = 'button';
+    btn.hidden = !AI_CHECK_AVAILABLE; // Claude Code checks only run on the user's own PC
     row.appendChild(name);
     row.appendChild(el('span', 'log-detail', text));
     row.appendChild(btn);
@@ -465,7 +474,7 @@ require __DIR__ . '/includes/layout_header.php';
     wrap.appendChild(panel);
     log.prepend(wrap);
 
-    if (result.outcome !== 'found' && !item.ai) {
+    if (result.outcome !== 'found' && !item.ai && AI_CHECK_AVAILABLE) {
       noEmailRows.push(rowRef);
     }
   }

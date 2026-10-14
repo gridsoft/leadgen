@@ -130,7 +130,7 @@ while (true) {
     try {
         $status = AgencyStore::process($pdo, $id, new AgencyScraper(), function () {
             return new AgencyQualifier(AiClientFactory::fromConfig());
-        }, true);
+        }, true, true); // wait for the AI if it's busy; no AI call without an email address
     } catch (AiQuotaExhausted $e) {
         $resetAt = (new DateTimeImmutable('tomorrow', new DateTimeZone('America/Los_Angeles')))->getTimestamp();
         Settings::set($pdo, 'ai_quota_reset_at', (string) $resetAt);

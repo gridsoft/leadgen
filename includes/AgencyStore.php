@@ -299,10 +299,12 @@ class AgencyStore {
      * The one exception: with $waitForQuota, a used-up daily AI quota or an
      * overloaded AI puts the agency back to 'pending' (nothing recorded) and
      * throws AiQuotaExhausted / AiTemporarilyUnavailable.
+     * With $requireEmail (background runs), a site with no usable email address,
+     * and none in the lead list, is recorded as NO_EMAIL_ERROR without an AI call.
      *
      * @return string the agency's new status
      */
-    public static function process(PDO $pdo, int $id, AgencyScraper $scraper, callable $makeQualifier, bool $waitForQuota = false): string {
+    public static function process(PDO $pdo, int $id, AgencyScraper $scraper, callable $makeQualifier, bool $waitForQuota = false, bool $requireEmail = false): string {
         $agency = self::getAgency($pdo, $id);
         if (!$agency) {
             return 'missing';
@@ -326,6 +328,13 @@ class AgencyStore {
         if (!$scrape['ok']) {
             self::insertAnalysis($pdo, $id, $row + ['error' => $scrape['error']]);
             return self::finish($pdo, $agency, 'fetch_failed', $scrape['error'], null);
+        }
+        // Background runs only email, so an agency with no usable address anywhere isn't worth
+        // an AI call. (By hand, the AI still runs: it may suggest a contact form instead.)
+        if ($requireEmail && !$scrape['emails'] && !$scrape['known_emails']) {
+            $error = self::NO_EMAIL_ERROR;
+            self::insertAnalysis($pdo, $id, $row + ['error' => $error]);
+            return self::finish($pdo, $agency, 'fetch_failed', $error, null);
         }
 
         try {
@@ -435,6 +444,8 @@ class AgencyStore {
 
     /** contact_note written when this feature marks a prospect reached out — so undo only clears its own mark. */
     public const AUTO_CONTACT_NOTE = 'Outreach email sent (Agency outreach)';
+    /** Background analysis found no address to email (process() with $requireEmail): no AI call was made. */
+    public const NO_EMAIL_ERROR = 'No email address found on the site or in your lead list (not sent to the AI)';
 
     public static function markSent(PDO $pdo, int $id): void {
         $pdo->prepare(

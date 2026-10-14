@@ -294,7 +294,8 @@ $filterDefs = filter_defs_prepare($filterDefs);
 <?php if ($forAnalysis): ?>
 <div class="notice">
   <?php $queueCount = ForAnalysis::count($pdo); ?><strong>For analysis:</strong> the <?= number_format($queueCount) ?> lead<?= $queueCount === 1 ? '' : 's' ?> the background worker analyzes next, newest first —
-  <?= htmlspecialchars(implode(', ', ForAnalysis::CATEGORIES)) ?> with an email address, not contacted, and whose website has no agency yet.
+  <?= htmlspecialchars(implode(', ', ForAnalysis::CATEGORIES)) ?>, not contacted, with a website that has no agency yet.
+  No email needed: the analysis finds it on their website, and skips the AI when there is none.
   Leads without a website, or whose site already failed, are left out. <a href="index.php">Show all leads</a>
 </div>
 <?php endif; ?>

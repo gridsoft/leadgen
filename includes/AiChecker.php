@@ -146,6 +146,13 @@ TXT;
     // service account — but it can trigger this task.
     public const WORKER_TASK = 'Leadgen AI worker';
 
+    /** Only on the user's Windows PC (WAMP): the live Linux host has no scheduled tasks and no Claude login. */
+    public static function available(): bool {
+        return PHP_OS_FAMILY === 'Windows';
+    }
+
+    public const UNAVAILABLE_MESSAGE = 'Check with AI runs on your own PC only (Claude Code with your Claude login). On the live site, use Agency outreach: it reads each website and finds the email itself.';
+
     /**
      * @return array{ok: bool, message: string}
      */

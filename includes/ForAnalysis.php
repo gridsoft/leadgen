@@ -33,9 +33,11 @@ final class ForAnalysis {
 
     /**
      * The worker's rules as one condition on prospects `p`, with its named
-     * parameters: a targeted type, an email address, not contacted or ignored,
-     * a website — and no agency for that website yet in any state (queued
-     * agencies are processed separately, and failed ones aren't retried).
+     * parameters: a targeted type, not contacted or ignored, a website — and
+     * no agency for that website yet in any state (queued agencies are
+     * processed separately, and failed ones aren't retried). No email address
+     * is needed: the analysis reads the site and finds it (cron_analyze.php
+     * skips the AI call when there is none anywhere).
      *
      * @return array{0: string, 1: array<string, string>}
      */
@@ -47,7 +49,6 @@ final class ForAnalysis {
             $params["fa_cat$i"] = $name;
         }
         $sql = '(LOWER(TRIM(p.category)) IN (' . implode(', ', $placeholders) . ")
-            AND p.contact_email IS NOT NULL AND p.contact_email != ''
             AND p.contacted_at IS NULL AND p.ignored_at IS NULL
             AND p.website_domain IS NOT NULL AND p.website_domain != ''
             AND NOT EXISTS (SELECT 1 FROM agencies a WHERE a.domain = p.website_domain))";
