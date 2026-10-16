@@ -19,8 +19,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['form'] ?? '') === 'auto_se
         AutoSender::enable($pdo);
     } elseif ($action === 'disable') {
         AutoSender::disable($pdo);
-    } elseif ($action === 'resume') {
-        AutoSender::resume($pdo);
     }
     header('Location: agency_settings.php?auto=' . urlencode($action) . '#auto-send');
     exit;
@@ -48,7 +46,6 @@ require __DIR__ . '/includes/layout_header.php';
 
 <?php
 $autoOn = AutoSender::enabled($pdo);
-$autoPaused = AutoSender::pausedReason($pdo);
 $autoLimit = AutoSender::limit($pdo);
 $autoWeek = AutoSender::recentBounces($pdo, 7);
 $autoGrowth = AutoSender::nextGrowth($pdo);
@@ -58,7 +55,7 @@ $autoNext = AutoSender::nextAt($pdo);
 $autoUsage = has_smtp_config() ? MailSender::usage($pdo) : null;
 $autoWindow = sprintf('Monday–Friday %02d:00–%02d:00', AutoSender::WINDOW[0], AutoSender::WINDOW[1]);
 $autoStart = AutoSender::startDate($pdo);
-if (!$autoOn || $autoPaused !== '') {
+if (!$autoOn) {
     $autoNextText = '—';
 } elseif ($autoStart > $autoNow->format('Y-m-d')) {
     $autoNextText = 'starts ' . date('l, M j', strtotime($autoStart)) . ' between ' . sprintf('%02d:00', AutoSender::WINDOW[0]) . ' and ' . sprintf('%02d:20', AutoSender::WINDOW[0]);
@@ -77,13 +74,11 @@ if (!$autoOn || $autoPaused !== '') {
 <div class="card" id="auto-send">
   <div class="run-head">
     <h2>Automatic sending
-      <?php if ($autoPaused !== ''): ?><span class="badge badge-neutral">Paused</span>
-      <?php elseif ($autoOn): ?><span class="badge badge-new">On</span>
+      <?php if ($autoOn): ?><span class="badge badge-new">On</span>
       <?php else: ?><span class="badge badge-neutral">Off</span><?php endif; ?>
     </h2>
     <form method="post" class="inline-form">
       <input type="hidden" name="form" value="auto_send">
-      <?php if ($autoPaused !== ''): ?><button type="submit" name="action" value="resume">Resume sending</button><?php endif; ?>
       <?php if ($autoOn): ?>
         <button type="submit" name="action" value="disable" class="btn-secondary">Turn off</button>
       <?php else: ?>
@@ -97,8 +92,8 @@ if (!$autoOn || $autoPaused !== '') {
   <p class="hint">Emails the <a href="agency_outreach.php?sort=score&amp;dir=desc&amp;decision%5B0%5D=SEND&amp;status%5B0%5D=analyzed&amp;email%5B0%5D=yes">Ready to send</a> agencies, best score first, from <?= h(MailSender::fromAddress() ?: 'the sending mailbox') ?>:
     <?= h($autoWindow) ?> (your time ≈ US business hours), spread out with random gaps. The daily limit starts at <?= AutoSender::START_LIMIT ?>
     and grows by <?= AutoSender::STEP ?> each week up to <?= AutoSender::MAX_LIMIT ?>, only while fewer than <?= round(AutoSender::GROW_MAX_BOUNCE_RATE * 100) ?>% bounce.
-    Sending pauses itself if bounces pile up or the mail server refuses an email. To keep an agency out, click Ignore on it.</p>
-  <?php if ($autoPaused !== ''): ?><div class="error">Paused: <?= h($autoPaused) ?></div><?php endif; ?>
+    It never pauses: bounced addresses are blocked so they are never emailed again, and an email the mail server refuses is retried 30 minutes later.
+    Keep an eye on the bounce rate below. To keep an agency out, click Ignore on it.</p>
   <dl class="kv">
     <dt>Today</dt><dd><?= $autoUsage ? (int) $autoUsage['today'] . ' of ' . (int) $autoUsage['cap'] . ' sent' : '—' ?> <span class="muted">(manual sends count too)</span></dd>
     <dt>Next email</dt><dd><?= h($autoNextText) ?></dd>

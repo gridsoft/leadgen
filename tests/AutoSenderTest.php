@@ -21,6 +21,6 @@ return [
     },
     'limits match the plan: 15 a day, +5 a week, at most 40' => function () {
         assert_same([15, 5, 40], [AutoSender::START_LIMIT, AutoSender::STEP, AutoSender::MAX_LIMIT]);
-        assert_true(AutoSender::GROW_MAX_BOUNCE_RATE <= 0.03 && AutoSender::PAUSE_BOUNCE_RATE <= 0.05);
+        assert_true(AutoSender::GROW_MAX_BOUNCE_RATE <= 0.03, 'the limit only grows while bounces stay low');
     },
 ];

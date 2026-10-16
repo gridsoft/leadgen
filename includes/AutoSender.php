@@ -16,9 +16,9 @@ require_once __DIR__ . '/MailboxSync.php';
  *    (manual sends count toward the same limit, see MailSender::dailyCap);
  *  - Monday–Friday inside WINDOW, Slovenian time (≈ US business hours), spread
  *    over the window with random gaps rather than a fixed rhythm;
- *  - paused automatically when bounces pile up or the mail server refuses a
- *    message, until resumed in Agency outreach → Settings.
- * Off until switched on there.
+ *  - it never pauses itself: a refused email is retried later (RETRY_AFTER_FAILURE_MINUTES),
+ *    and bounced addresses are blocked so they are never emailed again.
+ * Off until switched on in Agency outreach → Settings.
  */
 final class AutoSender {
     public const TIMEZONE = 'Europe/Ljubljana';
@@ -27,13 +27,8 @@ final class AutoSender {
     public const STEP = 5;
     public const MAX_LIMIT = 40;
     public const GROW_MAX_BOUNCE_RATE = 0.03;
-    /**
-     * Pause when the last 7 days bounce at this rate with at least PAUSE_MIN_BOUNCES, or that many
-     * bounce within a day. Only emails sent since the last Resume count: resuming means the
-     * bounces so far were seen (their addresses are blocked for good), so they can't pause it again.
-     */
-    public const PAUSE_BOUNCE_RATE = 0.05;
-    public const PAUSE_MIN_BOUNCES = 3;
+    /** After the mail server refuses an email, wait this long before the next try (no pause). */
+    private const RETRY_AFTER_FAILURE_MINUTES = 30;
     private const MIN_GAP_MINUTES = 4;
     /** Bounces arrive within minutes: read the mailbox before sending if it's older than this. */
     private const MAILBOX_FRESH_MINUTES = 15;
@@ -42,17 +37,11 @@ final class AutoSender {
         return Settings::get($pdo, 'auto_send_enabled') === '1';
     }
 
-    /** Why sending is paused ('' when it isn't). */
-    public static function pausedReason(PDO $pdo): string {
-        return Settings::get($pdo, 'auto_send_paused');
-    }
-
     /** $startDate (Y-m-d): no email goes out before that day; null = right away. */
     public static function enable(PDO $pdo, ?string $startDate = null): void {
         $today = self::now()->format('Y-m-d');
         $start = $startDate !== null && $startDate > $today ? $startDate : $today;
         Settings::set($pdo, 'auto_send_enabled', '1');
-        Settings::set($pdo, 'auto_send_paused', '');
         Settings::set($pdo, 'auto_send_start', $start);
         if (Settings::get($pdo, 'auto_send_limit') === '') {
             Settings::set($pdo, 'auto_send_limit', (string) self::START_LIMIT);
@@ -67,15 +56,6 @@ final class AutoSender {
 
     public static function disable(PDO $pdo): void {
         Settings::set($pdo, 'auto_send_enabled', '0');
-    }
-
-    public static function resume(PDO $pdo): void {
-        Settings::set($pdo, 'auto_send_resumed_at', (string) time());
-        Settings::set($pdo, 'auto_send_paused', '');
-    }
-
-    private static function pause(PDO $pdo, string $reason): void {
-        Settings::set($pdo, 'auto_send_paused', self::now()->format('M j, H:i') . ' — ' . $reason);
     }
 
     /** Today's daily limit, or null if automatic sending was never switched on. */
@@ -184,7 +164,7 @@ final class AutoSender {
      * $now and $send are for tests (a fixed clock, a fake sender); the cron passes neither.
      */
     public static function tick(PDO $pdo, ?DateTimeImmutable $now = null, ?callable $send = null): ?string {
-        if (!self::enabled($pdo) || self::pausedReason($pdo) !== '' || !has_smtp_config()) {
+        if (!self::enabled($pdo) || !has_smtp_config()) {
             return null;
         }
         $now = $now ?? self::now();
@@ -193,25 +173,6 @@ final class AutoSender {
             return null;
         }
         self::maybeGrow($pdo);
-
-        // Fresh bounce information first: never keep sending into a growing bounce problem.
-        if (MailboxSync::available() && OutreachInbox::ready($pdo)
-            && $now->getTimestamp() - (int) Settings::get($pdo, 'mailbox_synced_at', '0') > self::MAILBOX_FRESH_MINUTES * 60) {
-            try {
-                MailboxSync::run($pdo);
-            } catch (Throwable $e) {
-                return 'Not sending: the mailbox could not be checked for bounces (' . $e->getMessage() . ').';
-            }
-        }
-        $resumedAt = (int) Settings::get($pdo, 'auto_send_resumed_at', '0');
-        $week = self::recentBounces($pdo, 7, $resumedAt);
-        $day = self::recentBounces($pdo, 1, $resumedAt);
-        if (($week['bounced'] >= self::PAUSE_MIN_BOUNCES && $week['rate'] >= self::PAUSE_BOUNCE_RATE) || $day['bounced'] >= self::PAUSE_MIN_BOUNCES) {
-            $reason = sprintf('%d of %d emails bounced in the last 7 days%s (%.0f%%). The bounced addresses are blocked; check the others before resuming.',
-                $week['bounced'], $week['sent'], $resumedAt > $now->getTimestamp() - 7 * 86400 ? ' since you last resumed' : '', $week['rate'] * 100);
-            self::pause($pdo, $reason);
-            return "Paused: $reason";
-        }
 
         if (MailSender::limitReason($pdo) !== null) {
             return null; // daily limit reached, or the minimum gap since the last send hasn't passed
@@ -227,6 +188,18 @@ final class AutoSender {
             return null;
         }
 
+        // Fresh bounces first, so a just-bounced address is blocked before it could be picked.
+        // A failed mailbox check doesn't hold sending up; it is noted in the log.
+        $note = '';
+        if (MailboxSync::available() && OutreachInbox::ready($pdo)
+            && $now->getTimestamp() - (int) Settings::get($pdo, 'mailbox_synced_at', '0') > self::MAILBOX_FRESH_MINUTES * 60) {
+            try {
+                MailboxSync::run($pdo);
+            } catch (Throwable $e) {
+                $note .= ' (Mailbox check failed: ' . $e->getMessage() . ')';
+            }
+        }
+
         $pick = null;
         $rewrites = [];
         foreach (self::queue($pdo, 25) as $candidate) {
@@ -238,7 +211,7 @@ final class AutoSender {
             AgencyStore::queueReanalysis($pdo, (int) $candidate['agency']['id']);
             $rewrites[] = $candidate['agency']['domain'];
         }
-        $note = $rewrites ? ' Queued for a rewrite first (draft below the quality bar): ' . implode(', ', $rewrites) . '.' : '';
+        $note .= $rewrites ? ' Queued for a rewrite first (draft below the quality bar): ' . implode(', ', $rewrites) . '.' : '';
         if ($pick === null) {
             return $note !== '' ? trim($note) : null; // nothing sendable right now; the analysis cron refills the stock
         }
@@ -247,9 +220,9 @@ final class AutoSender {
         $sent = $send($pdo, AgencyStore::getAgency($pdo, (int) $a['id']), (int) $an['id'], $pick['to'],
             (string) ($an['edited_subject'] ?? $an['subject']), (string) ($an['edited_body'] ?? $an['body']));
         if (!$sent['ok']) {
-            // A refusal can mean the server is limiting us: stop for now rather than retrying into it.
-            self::pause($pdo, 'the mail server refused an email to ' . $pick['to'] . ': ' . $sent['error']);
-            return "Paused: sending to {$pick['to']} failed: {$sent['error']}";
+            // A refusal can mean the server is limiting us: try again later instead of right away.
+            Settings::set($pdo, 'auto_send_next_at', (string) ($now->getTimestamp() + self::RETRY_AFTER_FAILURE_MINUTES * 60));
+            return "Sending to {$pick['to']} failed: {$sent['error']} — trying again in " . self::RETRY_AFTER_FAILURE_MINUTES . ' minutes.' . $note;
         }
 
         // Next send: the rest of today's limit spread over the rest of the window, ±40%, never closer than MIN_GAP_MINUTES.
